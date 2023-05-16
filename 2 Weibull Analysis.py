@@ -29,3 +29,35 @@ Goodness of fit    Value
             BIC  165.088
              AD 0.837278
 '''
+
+
+### MCF Example
+from reliability.Repairable_systems import MCF_nonparametric
+from reliability.Datasets import MCF_2
+import matplotlib.pyplot as plt
+times = [[5, 10, 15, 17], [6, 13, 17, 19], [12, 20, 25, 26], [13, 15, 24], [16, 22, 25, 28]]
+MCF_nonparametric(data=times)
+plt.show()
+
+
+from reliability.Repairable_systems import MCF_parametric
+times = MCF_2().times
+MCF_parametric(data=times)
+plt.show()
+
+
+
+### Dealing with SettingWithCopyError / Warning
+dfb = pd.DataFrame({'a': ['one', 'one', 'two',
+                          'three', 'two', 'one', 'six'],
+                    'c': np.arange(7)})
+
+print(dfb)
+# This will show the SettingWithCopyWarning
+# but the frame values will be set
+dfb['c'][dfb['a'].str.startswith('o')] = 42
+print(dfb)
+
+# This will not actually assign the value
+# pd.set_option('mode.chained_assignment','warn')
+dfb[dfb['a'].str.startswith('o')]['c'] = 42

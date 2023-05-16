@@ -1,31 +1,42 @@
 #########################################################
 ###              Reliability Analysis                 ###
 ###                   Emily Sheen                     ###
-###                Weibull Analysis                   ###
+###  Survival Functions, Distribution Fitting, and    ###
+###         Failure Rate Exploratory Analysis         ###
 #########################################################
-
 
 from reliability.Distributions import Weibull_Distribution
 from reliability.Fitters import Fit_Weibull_2P
 from reliability.Probability_plotting import plot_points
 import matplotlib.pyplot as plt
 import pandas as pd
+import numpy as np
+from reliability.Nonparametric import KaplanMeier
+import matplotlib.pyplot as plt
 
 df = pd.read_csv('failures_censors_data.csv')
 pd.set_option('display.max_columns', None)
+fails = df.loc[df['censor_fail_status'] == 'F', 'days_to_censor_fail'].to_numpy()
+censors = df.loc[df['censor_fail_status'] == 'C', 'days_to_censor_fail'].to_numpy()
 
-fails = df.loc[df['censor_fail_status'] == 'F']
-
-# First we don't assume any right censoring
+# Let's look at the difference in estimates if we ignore the right censoring
 # dist = Weibull_Distribution(alpha=30, beta=2)  # creates the distribution object
 # data = dist.random_samples(20, seed=42)  # draws 20 samples from the distribution. Seeded for repeatability
 plt.subplot(121)
-fit = Fit_Weibull_2P(failures=fails['days_to_censor_fail'].to_numpy(), print_results=True)  # fits a Weibull distribution to the data and generates the probability plot
+fit = Fit_Weibull_2P(failures=fails, show_probability_plot=False, print_results=False)  # fits a Weibull distribution to the data and generates the probability plot
 plt.subplot(122)
 fit.distribution.SF(label='fitted distribution')  # uses the distribution object from Fit_Weibull_2P and plots the survival function
-
-dist.SF(label='original distribution', linestyle='--') # plots the survival function of the original distribution
+# dist.SF(label='original distribution', linestyle='--') # plots the survival function of the original distribution
+# Plotting survival functions with and without censoring
+KaplanMeier(failures=fails, right_censored=censors, label='Failures + Right Censors')
+KaplanMeier(failures=fails, label='Failures Only')
 plot_points(failures=fails, func='SF')  # overlays the original data on the survival function
+plt.legend()
+plt.show()
+plt.savefig("output.jpg")
+
+plt.title('Kaplan-Meier estimates showing the\nimportance of including censored data')
+plt.xlabel('Days to Failure')
 plt.legend()
 plt.show()
 
@@ -81,18 +92,31 @@ from sklearn.neighbors import KernelDensity
 fails = (df_xc.loc[df_xc['censor_code'] == 'F', 'event_time']).to_numpy()
 censors = (df_xc.loc[df_xc['censor_code'] == 'C', 'event_time']).to_numpy()
 wbf = Fit_Weibull_3P(failures=fails,
-                     right_censored=censors,
+                     # right_censored=censors,
                      show_probability_plot=True, print_results=True)  # fit the Weibull_3P distribution
 print('Fit_Weibull_3P parameters:\nAlpha:', wbf.alpha, '\nBeta:', wbf.beta, '\nGamma', wbf.gamma)
-histogram(fails) # generates the histogram of failures, which is uniform until censoring reduces the claims
-dist_kernel = KernelDensity(bandwidth=2, kernel='gaussian')
-model = KernelDensity(bandwidth=2, kernel='gaussian')
+# histogram(fails) # generates the histogram of failures, which is uniform until censoring reduces the claims
+
+# Histogram with kernel density estimate
+dist_kernel = KernelDensity(bandwidth=40, kernel='gaussian')  # bandwidth = 2 is very choppy
 sample = fails.reshape((len(fails), 1))
-model.fit(sample)
-dist.PDF(label='True Distribution')  # plots the true distribution's PDF
-wbf.distribution.PDF(label='Fit_Weibull_3P', linestyle='--')  # plots to PDF of the fitted Weibull_3P
+dist_kernel.fit(sample)
+# sample probabilities for a range of outcomes
+values = np.asarray([value for value in range(1, 1096)])
+values = values.reshape((len(values), 1))
+probabilities = dist_kernel.score_samples(values)
+probabilities = np.exp(probabilities)
+# plot the histogram and pdf
+plt.hist(sample, bins=50, density=True)
+plt.plot(values[:], probabilities, label='Kernel Density Estimate')
+wbf.distribution.PDF(xmin=0, xmax=1096, label='Fit_Weibull_3P', linestyle='--')  # plots to PDF of the fitted Weibull_3P
 plt.title('Fitting comparison for failures and right censored data')
 plt.legend()
+plt.show()
+
+
+dist_kernel.fit(sample)
+# dist.PDF(label='True Distribution')  # plots the true distribution's PDF
 plt.show()
 
 '''

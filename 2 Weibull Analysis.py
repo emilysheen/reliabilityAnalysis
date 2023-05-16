@@ -1,12 +1,24 @@
+#########################################################
+###              Reliability Analysis                 ###
+###                   Emily Sheen                     ###
+###                Weibull Analysis                   ###
+#########################################################
+
+
 from reliability.Distributions import Weibull_Distribution
 from reliability.Fitters import Fit_Weibull_2P
 from reliability.Probability_plotting import plot_points
 import matplotlib.pyplot as plt
+import pandas as pd
 
-dist = Weibull_Distribution(alpha=30, beta=2)  # creates the distribution object
-data = dist.random_samples(20, seed=42)  # draws 20 samples from the distribution. Seeded for repeatability
+df = pd.read_csv ('claims_censors_data.csv')
+claims = df.loc[df['censor_claim_status'] == 'Claim']
+
+# First we don't assume any right censoring
+# dist = Weibull_Distribution(alpha=30, beta=2)  # creates the distribution object
+# data = dist.random_samples(20, seed=42)  # draws 20 samples from the distribution. Seeded for repeatability
 plt.subplot(121)
-fit = Fit_Weibull_2P(failures=data)  # fits a Weibull distribution to the data and generates the probability plot
+fit = Fit_Weibull_2P(failures=claims['days_to_censor_claim'].to_numpy(),print_results=True)  # fits a Weibull distribution to the data and generates the probability plot
 plt.subplot(122)
 fit.distribution.SF(label='fitted distribution')  # uses the distribution object from Fit_Weibull_2P and plots the survival function
 dist.SF(label='original distribution', linestyle='--') # plots the survival function of the original distribution
@@ -17,18 +29,51 @@ plt.show()
 '''
 Results from Fit_Weibull_2P (95% CI):
 Analysis method: Maximum Likelihood Estimation (MLE)
-Failures / Right censored: 20/0 (0% right censored)
-
+Optimizer: L-BFGS-B
+Failures / Right censored: 16597/0 (0% right censored) 
 Parameter  Point Estimate  Standard Error  Lower CI  Upper CI
-    Alpha         28.1696         3.57032   21.9733   36.1131
-     Beta         1.86309         0.32449   1.32428   2.62111
-
-Goodness of fit    Value
- Log-likelihood -79.5482
-           AICc  163.802
-            BIC  165.088
-             AD 0.837278
+    Alpha         328.463         1.93378   324.694   332.275
+     Beta         1.38214      0.00864734   1.36529   1.39919 
+Goodness of fit   Value
+ Log-likelihood -110194
+           AICc  220392
+            BIC  220407
+             AD 42.8776 
 '''
+#########################################################################################
+### In order to incorporate the censoring of our data, we need to convert it to a     ###
+###   workable format with reliability.  The XCN format takes the following form:     ###
+###      event_time       censor_code      number_events                              ###
+###           13               F                 2                                    ###
+###           45               F                 3                                    ###
+###           78               F                 1                                    ###
+###           90               C                 4                                    ###
+###          103               C                 2                                    ###
+###   * This format simplifies to the case where number_events == 1 for each row.     ###
+df.head
+
+from reliability.Distributions import Weibull_Distribution
+from reliability.Fitters import Fit_Weibull_3P
+from reliability.Other_functions import make_right_censored_data, histogram
+import matplotlib.pyplot as plt
+
+a = 30
+b = 2
+g = 20
+threshold=55
+dist = Weibull_Distribution(alpha=a, beta=b, gamma=g) # generate a weibull distribution
+raw_data = dist.random_samples(500, seed=2)  # create some data from the distribution
+data = make_right_censored_data(raw_data,threshold=threshold) #right censor some of the data
+print('There are', len(data.right_censored), 'right censored items.')
+wbf = Fit_Weibull_3P(failures=data.failures, right_censored=data.right_censored, show_probability_plot=False, print_results=False)  # fit the Weibull_3P distribution
+print('Fit_Weibull_3P parameters:\nAlpha:', wbf.alpha, '\nBeta:', wbf.beta, '\nGamma', wbf.gamma)
+histogram(raw_data,white_above=threshold) # generates the histogram using optimal bin width and shades the censored part as white
+dist.PDF(label='True Distribution')  # plots the true distribution's PDF
+wbf.distribution.PDF(label='Fit_Weibull_3P', linestyle='--')  # plots to PDF of the fitted Weibull_3P
+plt.title('Fitting comparison for failures and right censored data')
+plt.legend()
+plt.show()
+
 
 
 ### MCF Example
@@ -46,18 +91,3 @@ MCF_parametric(data=times)
 plt.show()
 
 
-
-### Dealing with SettingWithCopyError / Warning
-dfb = pd.DataFrame({'a': ['one', 'one', 'two',
-                          'three', 'two', 'one', 'six'],
-                    'c': np.arange(7)})
-
-print(dfb)
-# This will show the SettingWithCopyWarning
-# but the frame values will be set
-dfb['c'][dfb['a'].str.startswith('o')] = 42
-print(dfb)
-
-# This will not actually assign the value
-# pd.set_option('mode.chained_assignment','warn')
-dfb[dfb['a'].str.startswith('o')]['c'] = 42

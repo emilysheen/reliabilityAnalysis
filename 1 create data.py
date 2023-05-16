@@ -56,7 +56,7 @@ len(cars.loc[cars['car_type'] == 'Sedan'])
 def get_miles(carty):
     avg = car_type_mileage.loc[car_type_mileage['car_type'] == carty, 'avg_annual_mileage']
     sd =  car_type_mileage.loc[car_type_mileage['car_type'] == carty, 'sd_annual_mileage']
-    car_mileage = np.random.normal(avg, sd, 3000)
+    car_mileage = abs(np.random.normal(avg, sd, 3000))
     return car_mileage
 
 for cart in car_type_mileage['car_type']:
@@ -102,19 +102,19 @@ print(cars.groupby(['car_type', 'model_year']).agg(
 ))
 
 
-def get_claim_counts(carty, my):
+def get_fail_counts(carty, my):
     lam = lambdas.loc[(lambdas['car_type'] == carty) & (lambdas['model_year'] == my), 'lambda']
-    n_claims = np.random.poisson(lam, size=1000)
-    return n_claims
+    n_fails = np.random.poisson(lam, size=1000)
+    return n_fails
 
-get_claim_counts('Sedan', 2020)
+get_fail_counts('Sedan', 2020)
 
 for index, row in lambdas.iterrows():
     cart = row['car_type']
     my = row['model_year']
-    cars.loc[(cars['car_type'] == cart) & (cars['model_year'] == my), 'n_claims'] = get_claim_counts(cart, my)
+    cars.loc[(cars['car_type'] == cart) & (cars['model_year'] == my), 'n_fails'] = get_fail_counts(cart, my)
 
-# n_claims will occur within the NVLW period of 3 years / 36,000 miles
+# n_fails will occur within the NVLW period of 3 years / 36,000 miles
 # Need to add timeout_date and mileage_out_date and min of those is nvlw_end_date
 cars['nvlw_timeout'] = cars['purchase_date'] + pd.DateOffset(months=36)
 cars['days_to_mileout'] = (36000/(cars['annual_mileage']*3)*365*3)
@@ -131,12 +131,9 @@ cars['nvlw_end_date'] = cars[['nvlw_mileout','nvlw_timeout']].min(axis=1)
 
 cars.to_csv("cars_data.csv", header=True, index=False)
 
-#### Now we need to determine which day in the NVLW period the claims will occur.
-# We will assume the claims can occur in [purchase_date, nvlw_end_date], but then censor back out
-# any claims in [today(), nvlw_end_date] for newer vehicles
+#### Now we need to determine which day in the NVLW period the failures will occur.
 
-
-claims = cars[["vin", "purchase_date", 'nvlw_end_date', "n_claims"]]
+claims = cars[["vin", "purchase_date", 'nvlw_end_date', "n_fails"]]
                # "manufacture_date",  "model_year", "car_type",
                # "annual_mileage", 'nvlw_timeout', 'days_to_mileout', 'nvlw_mileout',
 
@@ -156,44 +153,49 @@ claims['days_to_censor'] = (claims['censor_date'] - claims['purchase_date']).dt.
 # If the vehicle has 0 claims, we just need the row for censor date
 # If a vehicle has 1+ claim, we need a row for each claim and the censor date
 # Let's split up the censor / claim data to simplify transformation
-claims = claims.loc[claims.index.repeat(claims.n_claims + 1)]  # duplicates rows for n_claims + 1
+claims = claims.loc[claims.index.repeat(claims.n_fails + 1)]  # duplicates rows for n_fails + 1
 
 censors = claims[claims.duplicated()==False] # 1st copy of each vehicle to get censor date
 len(censors)
-claims = claims[claims.duplicated()]  # duplicate copies for claims == claims[claims['n_claims'] >= 1]
+claims = claims[claims.duplicated()]  # duplicate copies for claims == claims[claims['n_fails'] >= 1]
 
 # For the censor data, just set the date to the censor date from earlier and the status to Censor
-censors['days_to_censor_claim'] = censors['days_to_censor']
-censors['censor_claim_status'] = 'Censor'
-censors['censor_claim_date'] = censors['censor_date']
+censors['days_to_censor_fail'] = censors['days_to_censor']
+censors['censor_fail_status'] = 'C'
+censors['censor_fail_date'] = censors['censor_date']
 
-# We need to generate random claim dates, we will assume uniform distribution for simplicity
+# We need to generate random failure dates, we will assume uniform distribution for simplicity
 
-# claims['days_to_censor_claim'] = [random.randint(1, 1094) for i in range(0, len(claims))]
-claims['censor_claim_status'] = 'Claim'
+# claims['days_to_censor_fail'] = [random.randint(1, 1094) for i in range(0, len(claims))]
+claims['censor_fail_status'] = 'F'
+
+# Check for small windows in [purchase_date, censor_date] and negative days_to_censor values
+claims.loc[claims['days_to_censor'] < 0]
+
+pd.set_option('display.max_columns', None)
+print(cars.loc[cars['nvlw_end_date'] < cars['purchase_date']])
 
 def add_claim_days(row):
     high_lim = row['days_to_censor'] - 1
     add_days = random.randint(1, high_lim)
-    row['days_to_censor_claim'] = add_days
+    row['days_to_censor_fail'] = add_days
     end_date = row['purchase_date'] + datetime.timedelta(days=add_days)
     end_date = pd.to_datetime(end_date, format='%Y-%m-%d')
-    row['censor_claim_date'] = end_date
+    row['censor_fail_date'] = end_date
     return(row)
 
 claims = claims.apply(lambda row: add_claim_days(row), axis=1)
 
-# We changed the claim generation to not create claims outside [purchase_date, censor_date]
+# We changed the failure generation to not create failures outside [purchase_date, censor_date]
 # future_claims = claims.loc[claims['censor_claim_date'] > claims['censor_date']]
-claims = claims.loc[claims['censor_claim_date'] <= claims['censor_date']]
-len(future_claims)
+claims = claims.loc[claims['censor_fail_date'] <= claims['censor_date']]
 len(claims)
 
-sum(new_n_claims['count'])
-new_n_claims = claims.groupby('vin')['censor_claim_status'].apply(lambda x: (x=='Claim').sum()).reset_index(name='count')
-max(new_n_claims['count'])
-# Merge back claims and censors
-claims_censors = pd.concat([claims, censors]).sort_values(by=['purchase_date', 'vin', 'censor_claim_date'], axis=0)
+new_n_fails = claims.groupby('vin')['censor_fail_status'].apply(lambda x: (x=='F').sum()).reset_index(name='count')
+max(new_n_fails['count'])
+sum(new_n_fails['count'])
+# Merge back failures and censors
+claims_censors = pd.concat([claims, censors]).sort_values(by=['purchase_date', 'vin', 'censor_fail_date'], axis=0)
 
 claims_censors.to_csv("claims_censors_data.csv", header=True, index=False)
 claims.to_csv("claims_data.csv", header=True, index=False)

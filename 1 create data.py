@@ -2,7 +2,7 @@
 ###              Reliability Analysis                 ###
 ###                   Emily Sheen                     ###
 ###        1) Create automobile contract data         ###
-###        2) Create repair claims data               ###
+###        2) Create repair failures data               ###
 #########################################################
 
 ### Assume we have a sample of 10,000 vehicles from model years 2019, 2020, and 2021 with 36 month/36,000 mile bumper to bumper NVLW's.
@@ -74,18 +74,18 @@ print(car_type_mileage.sort_values(by='car_type'))
 
 
 ########################################################################################################################
-######  2) REPAIR CLAIMS DATA:  Let's assume we were approached about problematic engine block claims leading to   #####
-######     extensive NVLW claims.  We are interested in discovering the root cause of the engine block problems,   #####
+######  2) REPAIR Failures DATA:  Let's assume we were approached about problematic engine block failures leading  #####
+######     to extensive NVLW claims.  We are interested in discovering the root cause of the engine block problems,#####
 ######     which vehicle types and model years are afflicted with the issue, and whether a recall is necessary.    #####
 ######  *     Since for this example, we are designing the dataset to be explored, we will assume this is a 2020   #####
 ######     and 2021 problem for trucks and heavy duty trucks.  We will assume Poisson distribution with lambda = 3 #####
 ######     for 2020 and 2021 trucks and heavy duty trucks.  Let lambda values vary for other vehicle types and     #####
-######     model years, between 0.01 and 0.5.                                                                       #####
+######     model years, between 0.01 and 0.5.                                                                      #####
 ######  *     Let lambda = 3 for Engine Block claims w/in the 3 yr / 36K mi NVLW period, both trucks MY 2020/21    #####
 ######  *     Let lambda < 1 for all other car types, all 3 model years                                            #####
 ########################################################################################################################
 
-# Let's generate a random number of engine block claims for each vehicle in our sample
+# Let's generate a random number of engine block failures for each vehicle in our sample
 # Set lambda values for each car type and model year
 
 lambdas = pd.DataFrame({"car_type": cars['car_type'].unique().tolist() * 3,
@@ -133,31 +133,31 @@ cars.to_csv("cars_data.csv", header=True, index=False)
 
 #### Now we need to determine which day in the NVLW period the failures will occur.
 
-claims = cars[["vin", "purchase_date", 'nvlw_end_date', "n_fails"]]
+fails = cars[["vin", "purchase_date", 'nvlw_end_date', "n_fails"]]
                # "manufacture_date",  "model_year", "car_type",
                # "annual_mileage", 'nvlw_timeout', 'days_to_mileout', 'nvlw_mileout',
 
 
-claims.loc[(claims['nvlw_end_date'] < pd.to_datetime(datetime.date.today(), format='%Y-%m-%d')), 'censor_date'] = \
-    claims.loc[claims['nvlw_end_date'] < pd.to_datetime(datetime.date.today(), format='%Y-%m-%d'), 'nvlw_end_date']
-claims.loc[claims['nvlw_end_date'] >= pd.to_datetime(datetime.date.today(), format='%Y-%m-%d'), 'censor_date'] = \
+fails.loc[(fails['nvlw_end_date'] < pd.to_datetime(datetime.date.today(), format='%Y-%m-%d')), 'censor_date'] = \
+    fails.loc[fails['nvlw_end_date'] < pd.to_datetime(datetime.date.today(), format='%Y-%m-%d'), 'nvlw_end_date']
+fails.loc[fails['nvlw_end_date'] >= pd.to_datetime(datetime.date.today(), format='%Y-%m-%d'), 'censor_date'] = \
     pd.to_datetime(datetime.date.today(), format='%Y-%m-%d')
 
-claims.head(100)
-print(claims.dtypes)
-claims.loc[claims['nvlw_end_date'] >= pd.to_datetime(datetime.date.today(), format='%Y-%m-%d'), 'censor_date'].unique()
+fails.head(100)
+print(fails.dtypes)
+fails.loc[fails['nvlw_end_date'] >= pd.to_datetime(datetime.date.today(), format='%Y-%m-%d'), 'censor_date'].unique()
 
-claims[['censor_date', 'purchase_date']] = claims[['censor_date', 'purchase_date']].apply(pd.to_datetime)
-claims['days_to_censor'] = (claims['censor_date'] - claims['purchase_date']).dt.days
+fails[['censor_date', 'purchase_date']] = fails[['censor_date', 'purchase_date']].apply(pd.to_datetime)
+fails['days_to_censor'] = (fails['censor_date'] - fails['purchase_date']).dt.days
 
 # If the vehicle has 0 claims, we just need the row for censor date
 # If a vehicle has 1+ claim, we need a row for each claim and the censor date
 # Let's split up the censor / claim data to simplify transformation
-claims = claims.loc[claims.index.repeat(claims.n_fails + 1)]  # duplicates rows for n_fails + 1
+fails = fails.loc[fails.index.repeat(fails.n_fails + 1)]  # duplicates rows for n_fails + 1
 
-censors = claims[claims.duplicated()==False] # 1st copy of each vehicle to get censor date
+censors = fails[fails.duplicated()==False] # 1st copy of each vehicle to get censor date
 len(censors)
-claims = claims[claims.duplicated()]  # duplicate copies for claims == claims[claims['n_fails'] >= 1]
+fails = fails[fails.duplicated()]  # duplicate copies for claims == claims[claims['n_fails'] >= 1]
 
 # For the censor data, just set the date to the censor date from earlier and the status to Censor
 censors['days_to_censor_fail'] = censors['days_to_censor']
@@ -167,10 +167,10 @@ censors['censor_fail_date'] = censors['censor_date']
 # We need to generate random failure dates, we will assume uniform distribution for simplicity
 
 # claims['days_to_censor_fail'] = [random.randint(1, 1094) for i in range(0, len(claims))]
-claims['censor_fail_status'] = 'F'
+fails['censor_fail_status'] = 'F'
 
 # Check for small windows in [purchase_date, censor_date] and negative days_to_censor values
-claims.loc[claims['days_to_censor'] < 0]
+fails.loc[fails['days_to_censor'] < 0]
 
 pd.set_option('display.max_columns', None)
 print(cars.loc[cars['nvlw_end_date'] < cars['purchase_date']])
@@ -184,19 +184,17 @@ def add_claim_days(row):
     row['censor_fail_date'] = end_date
     return(row)
 
-claims = claims.apply(lambda row: add_claim_days(row), axis=1)
+fails = fails.apply(lambda row: add_claim_days(row), axis=1)
 
-# We changed the failure generation to not create failures outside [purchase_date, censor_date]
-# future_claims = claims.loc[claims['censor_claim_date'] > claims['censor_date']]
-claims = claims.loc[claims['censor_fail_date'] <= claims['censor_date']]
-len(claims)
+fails = fails.loc[fails['censor_fail_date'] <= fails['censor_date']]
+len(fails)
 
-new_n_fails = claims.groupby('vin')['censor_fail_status'].apply(lambda x: (x=='F').sum()).reset_index(name='count')
+new_n_fails = fails.groupby('vin')['censor_fail_status'].apply(lambda x: (x=='F').sum()).reset_index(name='count')
 max(new_n_fails['count'])
 sum(new_n_fails['count'])
 # Merge back failures and censors
-claims_censors = pd.concat([claims, censors]).sort_values(by=['purchase_date', 'vin', 'censor_fail_date'], axis=0)
+fails_censors = pd.concat([fails, censors]).sort_values(by=['purchase_date', 'vin', 'censor_fail_date'], axis=0)
+fails_censors.head(100)
 
-claims_censors.to_csv("claims_censors_data.csv", header=True, index=False)
-claims.to_csv("claims_data.csv", header=True, index=False)
-# future_claims.to_csv("future_claims_data.csv", header=True, index=False)
+fails_censors.to_csv("failures_censors_data.csv", header=True, index=False)
+fails.to_csv("failures_data.csv", header=True, index=False)

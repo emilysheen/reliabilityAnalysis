@@ -11,14 +11,16 @@ from reliability.Probability_plotting import plot_points
 import matplotlib.pyplot as plt
 import pandas as pd
 
-df = pd.read_csv ('claims_censors_data.csv')
-claims = df.loc[df['censor_claim_status'] == 'Claim']
+df = pd.read_csv('failures_censors_data.csv')
+pd.set_option('display.max_columns', None)
+
+fails = df.loc[df['censor_fail_status'] == 'F']
 
 # First we don't assume any right censoring
 # dist = Weibull_Distribution(alpha=30, beta=2)  # creates the distribution object
 # data = dist.random_samples(20, seed=42)  # draws 20 samples from the distribution. Seeded for repeatability
 plt.subplot(121)
-fit = Fit_Weibull_2P(failures=claims['days_to_censor_claim'].to_numpy(),print_results=True)  # fits a Weibull distribution to the data and generates the probability plot
+fit = Fit_Weibull_2P(failures=fails['days_to_censor_fail'].to_numpy(), print_results=True)  # fits a Weibull distribution to the data and generates the probability plot
 plt.subplot(122)
 fit.distribution.SF(label='fitted distribution')  # uses the distribution object from Fit_Weibull_2P and plots the survival function
 dist.SF(label='original distribution', linestyle='--') # plots the survival function of the original distribution
@@ -50,12 +52,68 @@ Goodness of fit   Value
 ###           90               C                 4                                    ###
 ###          103               C                 2                                    ###
 ###   * This format simplifies to the case where number_events == 1 for each row.     ###
+###                                                                                   ###
+###  * Reliability package allows us to fit several distributions to our sample       ###
+###    ~ Functions to fit Non-Location-Shifted Distributions: Fit_Exponential_1P,     ###
+###      Fit_Weibull_2P, Fit_Gamma_2P, Fit_Lognormal_2P, Fit_Loglogistic_2P           ###
+###      Fit_Normal_2P, Fit_Gumbel_2P, Fit_Beta_2P                                    ###
+###    ~ Functions to fit Location-Shifted distributions:  Fit_Exponential_2P,        ###
+###      Fit_Weibull_3P, Fit_Gamma_3P, Fit_Lognormal_3P, Fit_Loglogistic_3P           ###
+#########################################################################################
 df.head
+
+df_xc = df[['days_to_censor_fail','censor_fail_status']].copy().rename(
+    columns={'days_to_censor_fail':'event_time', 'censor_fail_status':'censor_code'}).sort_values(
+    by=['event_time'], ascending=True)
+df_xc.groupby(['event_time', 'censor_code']).size()
+df_xcn = pd.DataFrame({'number_events' : df_xc.groupby( ['event_time', 'censor_code'] ).size()}).reset_index()
+df_xc.head
+df_xcn.head
 
 from reliability.Distributions import Weibull_Distribution
 from reliability.Fitters import Fit_Weibull_3P
 from reliability.Other_functions import make_right_censored_data, histogram
 import matplotlib.pyplot as plt
+from sklearn.neighbors import KernelDensity
+
+# Let's try again to fit Weibull distribution incorporating the censoring data using df_xc
+fails = (df_xc.loc[df_xc['censor_code'] == 'F', 'event_time']).to_numpy()
+censors = (df_xc.loc[df_xc['censor_code'] == 'C', 'event_time']).to_numpy()
+wbf = Fit_Weibull_3P(failures=fails,
+                     right_censored=censors,
+                     show_probability_plot=True, print_results=True)  # fit the Weibull_3P distribution
+print('Fit_Weibull_3P parameters:\nAlpha:', wbf.alpha, '\nBeta:', wbf.beta, '\nGamma', wbf.gamma)
+histogram(fails) # generates the histogram of failures, which is uniform until censoring reduces the claims
+dist_kernel = KernelDensity(bandwidth=2, kernel='gaussian')
+model = KernelDensity(bandwidth=2, kernel='gaussian')
+sample = fails.reshape((len(fails), 1))
+model.fit(sample)
+dist.PDF(label='True Distribution')  # plots the true distribution's PDF
+wbf.distribution.PDF(label='Fit_Weibull_3P', linestyle='--')  # plots to PDF of the fitted Weibull_3P
+plt.title('Fitting comparison for failures and right censored data')
+plt.legend()
+plt.show()
+
+'''
+* Probability plot is bendy suggesting poor fit.  Makes sense because we did not generate the failures data
+using a Weibull generator
+
+Results from Fit_Weibull_3P (95% CI):
+Analysis method: Maximum Likelihood Estimation (MLE)
+Optimizer: TNC
+Failures / Right censored: 16195/30000 (64.94209% right censored) 
+Parameter  Point Estimate  Standard Error  Lower CI  Upper CI
+    Alpha         2121.91         26.5131   2070.58   2174.52
+     Beta        0.827758      0.00601503  0.816052  0.839631
+    Gamma          0.9999     4.71258e-05  0.999808  0.999992 
+Goodness of fit   Value
+ Log-likelihood -136823
+           AICc  273651
+            BIC  273678
+             AD  155736 
+'''
+
+
 
 a = 30
 b = 2

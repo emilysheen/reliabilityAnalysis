@@ -23,8 +23,9 @@ plt.subplot(121)
 fit = Fit_Weibull_2P(failures=fails['days_to_censor_fail'].to_numpy(), print_results=True)  # fits a Weibull distribution to the data and generates the probability plot
 plt.subplot(122)
 fit.distribution.SF(label='fitted distribution')  # uses the distribution object from Fit_Weibull_2P and plots the survival function
+
 dist.SF(label='original distribution', linestyle='--') # plots the survival function of the original distribution
-plot_points(failures=data, func='SF')  # overlays the original data on the survival function
+plot_points(failures=fails, func='SF')  # overlays the original data on the survival function
 plt.legend()
 plt.show()
 

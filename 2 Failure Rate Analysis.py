@@ -14,33 +14,51 @@ import numpy as np
 from reliability.Nonparametric import KaplanMeier
 import matplotlib.pyplot as plt
 
-df = pd.read_csv('failures_censors_data.csv')
-pd.set_option('display.max_columns', None)
-fails = df.loc[df['censor_fail_status'] == 'F', 'days_to_censor_fail'].to_numpy()
-censors = df.loc[df['censor_fail_status'] == 'C', 'days_to_censor_fail'].to_numpy()
+df = pd.read_csv('failures_censors_data.csv').sort_values(by=['vin', 'days_to_censor_fail'])
+# pd.set_option('display.max_columns', None)
+first_fails = df[df.duplicated(['vin', 'censor_fail_status'])==False]
+len(first_fails.loc[first_fails['censor_fail_status'] == 'C'])
+check = pd.DataFrame({'number_events' : first_fails.groupby( ['vin', 'censor_fail_status'] ).size()}).reset_index()
+max(check['number_events'])
 
-# Let's look at the difference in estimates if we ignore the right censoring
-# dist = Weibull_Distribution(alpha=30, beta=2)  # creates the distribution object
-# data = dist.random_samples(20, seed=42)  # draws 20 samples from the distribution. Seeded for repeatability
+fails = first_fails.loc[first_fails['censor_fail_status'] == 'F', 'days_to_censor_fail'].to_numpy()
+censors = first_fails.loc[first_fails['censor_fail_status'] == 'C', 'days_to_censor_fail'].to_numpy()
+
+# FIRST WE WILL EXAMINE THE SURVIVAL FUNCTIONS, ONLY CONSIDERING THE FIRST FAILURES
+# This gives us an idea of the percentage of units experiencing failures by Day since purchase_date
+# To illustrate the importance of accounting for censoring, we show the same plots ignoring and accounting for censoring.
+
+plt.figure(figsize=(12, 5))
+plt.suptitle("Survival Functions for First Failures\nIgnoring Censoring", fontsize=16)
 plt.subplot(121)
-fit = Fit_Weibull_2P(failures=fails, show_probability_plot=False, print_results=False)  # fits a Weibull distribution to the data and generates the probability plot
+fit = Fit_Weibull_2P(failures=fails, show_probability_plot=True, print_results=False)  # fits a Weibull distribution to the data and generates the probability plot
+plt.xlabel('Days to Failure')
 plt.subplot(122)
-fit.distribution.SF(label='fitted distribution')  # uses the distribution object from Fit_Weibull_2P and plots the survival function
-# dist.SF(label='original distribution', linestyle='--') # plots the survival function of the original distribution
-# Plotting survival functions with and without censoring
-KaplanMeier(failures=fails, right_censored=censors, label='Failures + Right Censors')
-KaplanMeier(failures=fails, label='Failures Only')
-plot_points(failures=fails, func='SF')  # overlays the original data on the survival function
-plt.legend()
-plt.show()
-plt.savefig("output.jpg")
-
-plt.title('Kaplan-Meier estimates showing the\nimportance of including censored data')
+fit.distribution.SF(label='Weibull SF: Failures Only')  # uses the distribution object from Fit_Weibull_2P and plots the survival function
+KaplanMeier(failures=fails, label='Kaplan Meier SF: Failures Only')
+plot_points(failures=fails, func='SF', color='yellow')  # overlays the original data on the survival function
 plt.xlabel('Days to Failure')
 plt.legend()
 plt.show()
+plt.savefig("plots/KM and Weibull Survival Functions - No Censoring.jpg")
+
+plt.figure(figsize=(12, 5))
+plt.suptitle("Survival Functions for First Failures\nWith Censoring", fontsize=16)
+plt.subplot(121)
+fit2 = Fit_Weibull_2P(failures=fails, right_censored=censors, show_probability_plot=True, print_results=False)  # fits a Weibull distribution to the data and generates the probability plot
+plt.xlabel('Days to Failure')
+plt.subplot(122)
+fit2.distribution.SF(label='Weibull SF: Failures + Right Censoring', xmin=0, xmax=1200)  # uses the distribution object from Fit_Weibull_2P and plots the survival function
+KaplanMeier(failures=fails, right_censored=censors, label='Kaplan Meier SF: Failures + Right Censoring')
+plot_points(failures=fails, right_censored=censors, func='SF', color='yellow')  # overlays the original data on the survival function
+plt.xlabel('Days to Failure')
+plt.legend()
+plt.show()
+plt.savefig("plots/KM and Weibull Survival Functions - With Censoring.jpg")
+
 
 '''
+IGNORING RIGHT CENSORING, THE WEIBULL FIT IS AS FOLLOWS:
 Results from Fit_Weibull_2P (95% CI):
 Analysis method: Maximum Likelihood Estimation (MLE)
 Optimizer: L-BFGS-B
@@ -53,10 +71,25 @@ Goodness of fit   Value
            AICc  220392
             BIC  220407
              AD 42.8776 
+      
+TAKING CENSORING INTO CONSIDERATION, THE WEIBULL FIT IS LESS STRONG:       
+Results from Fit_Weibull_2P (95% CI):
+Analysis method: Maximum Likelihood Estimation (MLE)
+Optimizer: TNC
+Failures / Right censored: 7540/30000 (79.91476% right censored) 
+Parameter  Point Estimate  Standard Error  Lower CI  Upper CI
+    Alpha         7776.74         245.773   7309.65   8273.68
+     Beta        0.645126      0.00708556  0.631387  0.659164 
+Goodness of fit    Value
+ Log-likelihood -67893.8
+           AICc   135792
+            BIC   135809
+             AD   117231 
 '''
 #########################################################################################
-### In order to incorporate the censoring of our data, we need to convert it to a     ###
-###   workable format with reliability.  The XCN format takes the following form:     ###
+### In order to work with other reliability models and incorporate the censoring      ###
+###   of our data, we need to convert it to a workable format with reliability.       ###
+###  The XCN format takes the following form:                                         ###
 ###      event_time       censor_code      number_events                              ###
 ###           13               F                 2                                    ###
 ###           45               F                 3                                    ###
@@ -92,7 +125,7 @@ from sklearn.neighbors import KernelDensity
 fails = (df_xc.loc[df_xc['censor_code'] == 'F', 'event_time']).to_numpy()
 censors = (df_xc.loc[df_xc['censor_code'] == 'C', 'event_time']).to_numpy()
 wbf = Fit_Weibull_3P(failures=fails,
-                     # right_censored=censors,
+                     right_censored=censors,
                      show_probability_plot=True, print_results=True)  # fit the Weibull_3P distribution
 print('Fit_Weibull_3P parameters:\nAlpha:', wbf.alpha, '\nBeta:', wbf.beta, '\nGamma', wbf.gamma)
 # histogram(fails) # generates the histogram of failures, which is uniform until censoring reduces the claims
@@ -109,15 +142,12 @@ probabilities = np.exp(probabilities)
 # plot the histogram and pdf
 plt.hist(sample, bins=50, density=True)
 plt.plot(values[:], probabilities, label='Kernel Density Estimate')
-wbf.distribution.PDF(xmin=0, xmax=1096, label='Fit_Weibull_3P', linestyle='--')  # plots to PDF of the fitted Weibull_3P
-plt.title('Fitting comparison for failures and right censored data')
+# wbf.distribution.PDF(xmin=0, xmax=1096, label='Fit_Weibull_3P', linestyle='--')  # plots to PDF of the fitted Weibull_3P, not comparable
+plt.title('NVLW Failure Emergence:\nFlat until cars leave NVLW')
 plt.legend()
 plt.show()
+plt.savefig("plots/NVLW Failure Emergence.jpg")
 
-
-dist_kernel.fit(sample)
-# dist.PDF(label='True Distribution')  # plots the true distribution's PDF
-plt.show()
 
 '''
 * Probability plot is bendy suggesting poor fit.  Makes sense because we did not generate the failures data
@@ -139,23 +169,6 @@ Goodness of fit   Value
 '''
 
 
-
-a = 30
-b = 2
-g = 20
-threshold=55
-dist = Weibull_Distribution(alpha=a, beta=b, gamma=g) # generate a weibull distribution
-raw_data = dist.random_samples(500, seed=2)  # create some data from the distribution
-data = make_right_censored_data(raw_data,threshold=threshold) #right censor some of the data
-print('There are', len(data.right_censored), 'right censored items.')
-wbf = Fit_Weibull_3P(failures=data.failures, right_censored=data.right_censored, show_probability_plot=False, print_results=False)  # fit the Weibull_3P distribution
-print('Fit_Weibull_3P parameters:\nAlpha:', wbf.alpha, '\nBeta:', wbf.beta, '\nGamma', wbf.gamma)
-histogram(raw_data,white_above=threshold) # generates the histogram using optimal bin width and shades the censored part as white
-dist.PDF(label='True Distribution')  # plots the true distribution's PDF
-wbf.distribution.PDF(label='Fit_Weibull_3P', linestyle='--')  # plots to PDF of the fitted Weibull_3P
-plt.title('Fitting comparison for failures and right censored data')
-plt.legend()
-plt.show()
 
 
 

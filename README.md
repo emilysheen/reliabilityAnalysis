@@ -44,6 +44,7 @@ package in Python offers a multitude of useful functions for fitting and plottin
        17200         1            22       0.954545    0.8855 * 0.9545 = 0.845217   0.705334    0.985101
        23060         0            21       0.954545                      0.845217   0.705334    0.985101
      ```  
+    
     As you can see in the above table, with each censoring row the Survival Probability and KM estimate stay the same as the last row.
     Let $S = # Survivors at Start$ and $P_T = Survival Probability at Fail Time T$.  In this example, there is only 1 failure per fail row.
     Each row's Survival Probability $P_T = \frac{S_T - F_T}{S_T}$, e.g. (25-1)/25=0.96 for time 2754.

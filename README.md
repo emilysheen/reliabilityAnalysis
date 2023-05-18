@@ -21,24 +21,29 @@ purchase) and mileage (1K miles since purchase) can paint a very different pictu
 
 **2 Failure Rate Analysis.py** explores distribution fitting and non-parametric measures of failure rates.  The reliability
 package in Python offers a multitude of useful functions for fitting and plotting different curves for the failure rates.
+
   1) **Survival Functions for First Failures**: The time until first-failure can be assessed using survival methods commonly
      used with medical datasets.  The Kaplan-Meier surival function is a non-parametric curve showing the probability
      that a vehicle will survive (or the particular component will not fail) up to time T.  The method accounts for 
      censoring (in this case, a vehicle's NVLW ending) in order to get an accurate rate of survival probability.
      Confidence intervals are constructed using Greenwood's normal approximation, https://www.math.wustl.edu/~sawyer/handouts/greenwood.pdf
-     **Example Results from KaplanMeier (95% CI):**
-       Failure times  Censoring code (censored=0)  Items remaining  Kaplan-Meier Estimate  Lower CI bound  Upper CI bound
-                3961                            0               31                      1               1               1
-                4007                            0               30                      1               1               1
-                4734                            0               29                      1               1               1
-                5248                            1               28               0.964286        0.895548               1
-                6054                            0               27               0.964286        0.895548               1
-                7298                            0               26               0.964286        0.895548               1
-                7454                            1               25               0.925714        0.826513               1
-               10190                            0               24               0.925714        0.826513               1
-               16890                            1               23               0.885466         0.76317               1
-               17200                            1               22               0.845217        0.705334        0.985101
-               23060                            0               21               0.845217        0.705334        0.985101
-    As you can see in the above table, with each censoring row the KM estimate stays the same as the previous row.
-    At each failure, the estimate changes to KMEi = ((# subjects living at start) - (# failed))/(# subjects living at start)
+     **Example Results from KaplanMeier (95% CI):** taken from https://reliability.readthedocs.io/en/latest/Kaplan-Meier.html#example-1
+      **Fail    Censor=0/    # Survivors  Surv Prob.        Kaplan-Meier Estimate    LowerCI   UpperCI**
+      **Times   Failure=1     at Start**
+        3961         0            31          1                              1          1          1
+        4007         0            30          1                              1          1          1
+        4734         0            29          1                              1          1          1
+        5248         1            28       0.964286                      0.964286   0.895548       1
+        6054         0            27       0.964286                      0.964286   0.895548       1
+        7298         0            26       0.964286                      0.964286   0.895548       1
+        7454         1            25         0.96        0.96 * 0.9643 = 0.925714   0.826513       1
+       10190         0            24         0.96                        0.925714   0.826513       1
+       16890         1            23       0.956522    0.9257 * 0.9565 = 0.885466    0.76317       1
+       17200         1            22       0.954545    0.8855 * 0.9545 = 0.845217   0.705334    0.985101
+       23060         0            21       0.954545                      0.845217   0.705334    0.985101
+       
+    As you can see in the above table, with each censoring row the Survival Probability and KM estimate stay the same as the last row.
+    Each row's Survival Probability = (# Survivors at Start  -   # Failures) / (# Survivors at Start), e.g. (25-1)/25=0.96 for time 2754.
+    The KM Estimate multiplies the prior row's KME by the new Survival Probability.  E.g. at time 16890, KME = 0.9257 * 0.9565 = 0.885466.
+    
   2) 

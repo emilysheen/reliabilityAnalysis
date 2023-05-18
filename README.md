@@ -27,7 +27,9 @@ package in Python offers a multitude of useful functions for fitting and plottin
      that a vehicle will survive (or the particular component will not fail) up to time T.  The method accounts for 
      censoring (in this case, a vehicle's NVLW ending) in order to get an accurate rate of survival probability.
      Confidence intervals are constructed using Greenwood's normal approximation, https://www.math.wustl.edu/~sawyer/handouts/greenwood.pdf
+     
      **Example Results from KaplanMeier (95% CI):** taken from https://reliability.readthedocs.io/en/latest/Kaplan-Meier.html#example-1
+     
       **Fail    Censor=0/    # Survivors  Surv Prob.        Kaplan-Meier Estimate    LowerCI   UpperCI**
       **Times   Failure=1     at Start**
         3961         0            31          1                              1          1          1

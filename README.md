@@ -29,6 +29,11 @@ package in Python offers a multitude of useful functions for fitting and plottin
      Confidence intervals are constructed using Greenwood's normal approximation, https://www.math.wustl.edu/~sawyer/handouts/greenwood.pdf
      
      **Example Results from KaplanMeier (95% CI):** taken from https://reliability.readthedocs.io/en/latest/Kaplan-Meier.html#example-1
+      As you can see in the table below, with each censoring row the Survival Probability and KM estimate stay the same as the last row.
+      Let $S = # Survivors at Start$ and $P_T = Survival Probability at Fail Time T$.  In this example, there is only 1 failure per fail row.
+      Each row's Survival Probability $P_T = \frac{S_T - F_T}{S_T}$, e.g. (25-1)/25=0.96 for time 2754.
+      The KM Estimate multiplies the prior row's KME by the new Survival Probability.  E.g. at time 16890, KME = 0.9257 * 0.9565 = 0.885466.
+    
      ```
         Fail    Censor=0/    # Survivors  Surv Prob.        Kaplan-Meier Estimate    LowerCI   UpperCI**
        Times    Failure=1      at Start
@@ -45,9 +50,5 @@ package in Python offers a multitude of useful functions for fitting and plottin
        23060         0            21       0.954545                      0.845217   0.705334    0.985101
      ```  
     
-    As you can see in the above table, with each censoring row the Survival Probability and KM estimate stay the same as the last row.
-    Let $S = # Survivors at Start$ and $P_T = Survival Probability at Fail Time T$.  In this example, there is only 1 failure per fail row.
-    Each row's Survival Probability $P_T = \frac{S_T - F_T}{S_T}$, e.g. (25-1)/25=0.96 for time 2754.
-    The KM Estimate multiplies the prior row's KME by the new Survival Probability.  E.g. at time 16890, KME = 0.9257 * 0.9565 = 0.885466.
-    
+   
   2) 

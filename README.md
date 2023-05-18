@@ -29,6 +29,7 @@ package in Python offers a multitude of useful functions for fitting and plottin
      Confidence intervals are constructed using Greenwood's normal approximation, https://www.math.wustl.edu/~sawyer/handouts/greenwood.pdf
      
      **Example Results from KaplanMeier (95% CI):** taken from https://reliability.readthedocs.io/en/latest/Kaplan-Meier.html#example-1
+      
       As you can see in the table below, with each censoring row the Survival Probability and KM estimate stay the same as the last row.
       Let $S = $\# Survivors at Start and $P_T =$ Survival Probability at Fail Time $T$.  In this example, there is only 1 failure per 
       fail row. Each row's Survival Probability $P_T = \frac{S_T - F_T}{S_T}$, e.g. $(25-1)/25=0.96$ for $T= 2754$.

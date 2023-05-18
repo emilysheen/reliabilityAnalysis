@@ -30,8 +30,8 @@ package in Python offers a multitude of useful functions for fitting and plottin
      
      **Example Results from KaplanMeier (95% CI):** taken from https://reliability.readthedocs.io/en/latest/Kaplan-Meier.html#example-1
      ```
-      **Fail    Censor=0/    # Survivors  Surv Prob.        Kaplan-Meier Estimate    LowerCI   UpperCI**
-      **Times   Failure=1     at Start**
+        Fail    Censor=0/    # Survivors  Surv Prob.        Kaplan-Meier Estimate    LowerCI   UpperCI**
+       Times    Failure=1      at Start
         3961         0            31          1                              1          1          1
         4007         0            30          1                              1          1          1
         4734         0            29          1                              1          1          1

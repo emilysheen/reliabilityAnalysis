@@ -25,7 +25,56 @@ max(check['number_events'])
 fails = first_fails.loc[first_fails['censor_fail_status'] == 'F', 'days_purchase_to_censor_fail'].to_numpy()
 censors = first_fails.loc[first_fails['censor_fail_status'] == 'C', 'days_purchase_to_censor_fail'].to_numpy()
 
-# FIRST WE WILL EXAMINE THE SURVIVAL FUNCTIONS, ONLY CONSIDERING THE FIRST FAILURES
+#####  LET'S CHECK WHICH DISTRIBUTION HAS THE BEST FIT FOR THIS SIMULATED DATA
+from reliability.Fitters import Fit_Everything
+from reliability.Distributions import Weibull_Distribution
+from reliability.Other_functions import make_right_censored_data
+
+# raw_data = Weibull_Distribution(alpha=12, beta=3).random_samples(100, seed=2)  # create some data
+# data = make_right_censored_data(raw_data, threshold=14)  # right censor the data
+# results = Fit_Everything(failures=data.failures, right_censored=data.right_censored)  # fit all the models
+results = Fit_Everything(failures=fails, right_censored=censors) # fit all the models
+plt.close()
+
+plt.tight_layout()
+results.histogram_plot.savefig("plots/Histogram of All Distribution Fits.jpg", dpi=200)
+results.probability_plot.savefig("plots/Probability Plots of All Distribution Fits.jpg")
+results.best_distribution_probability_plot.savefig("plots/Probability Plot of Best Dist - " + results.best_distribution_name + ".jpg")
+results.PP_plot.savefig("plots/SemiParametric PP Plots of All Distribution Fits.jpg")
+print('The best fitting distribution was', results.best_distribution_name)
+
+'''
+Results from Fit_Everything:
+Results from Fit_Everything:
+Analysis method: MLE
+Failures / Right censored: 7614/30000 (79.75754% right censored) 
+   Distribution   Alpha     Beta    Gamma Alpha 1   Beta 1 Alpha 2   Beta 2 Proportion 1       DS      Mu   Sigma      Lambda  Log-likelihood   AICc    BIC     AD optimizer
+Weibull_Mixture                           213.306 0.989545  9891.7 0.987435     0.140727                                             -68153.7 136317 136360 117929       TNC
+     Weibull_DS 432.198 0.887733                                                         0.253359                                    -68183.4 136373 136398 117929       TNC
+   Lognormal_3P                  0.780559                                                         9.03753 2.89256                    -68199.2 136404 136430 117929       TNC
+   Lognormal_2P                                                                                   8.98572 2.83474                    -68219.5 136443 136460 117929       TNC
+ Loglogistic_3P 5952.41 0.663814   0.9999                                                                                            -68243.6 136493 136519 117930       TNC
+     Weibull_3P 8328.92 0.622596   0.9999                                                                                            -68297.4 136601 136626 117931       TNC
+       Gamma_3P 13002.9 0.597674   0.9999                                                                                            -68337.5 136681 136707 117931       TNC
+ Loglogistic_2P 5537.27 0.686637                                                                                                       -68399 136802 136819 117930       TNC
+     Weibull_2P 7705.37 0.643513                                                                                                     -68468.6 136941 136958 117931       TNC
+     Weibull_CR                           7705.35 0.643514 10694.6  15.7975                                                          -68468.6 136945 136979 117931       TNC
+       Gamma_2P 11631.5  0.62014                                                                                                     -68517.3 137039 137056 117932       TNC
+ Exponential_2P                    0.9999                                                                         0.000298313        -69419.6 138843 138860 117960       TNC
+ Exponential_1P                                                                                                   0.000355937        -69559.1 139120 139129 117949  L-BFGS-B
+      Normal_2P                                                                                   1536.84  895.94                    -73822.6 147649 147666 117956       TNC
+      Gumbel_2P                                                                                   1655.77 562.319                    -74666.2 149336 149353 117958       TNC 
+
+
+The best fitting distribution was Weibull_2P which had parameters [11.27730641  3.30300712  0.        ]
+'''
+
+
+
+
+
+
+# EXAMINE THE SURVIVAL FUNCTIONS, ONLY CONSIDERING THE FIRST FAILURES
 # This gives us an idea of the percentage of units experiencing failures by Day since purchase_date
 # To illustrate the importance of accounting for censoring, we show the same plots ignoring and accounting for censoring.
 

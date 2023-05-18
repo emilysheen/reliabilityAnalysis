@@ -252,6 +252,8 @@ plt.xlabel("Days since NVLW Start")
 plt.show()
 plt.savefig("plots/Parametric MCF for All Vehicles.jpg")
 
+# Parametric plot here looks like a poor fit to the data
+
 
 
 #  Now we want to try to figure out WHY we have such high repair rates early in the vehicles' lives

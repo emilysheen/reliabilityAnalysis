@@ -22,8 +22,8 @@ len(first_fails.loc[first_fails['censor_fail_status'] == 'C'])
 check = pd.DataFrame({'number_events' : first_fails.groupby( ['vin', 'censor_fail_status'] ).size()}).reset_index()
 max(check['number_events'])
 
-fails = first_fails.loc[first_fails['censor_fail_status'] == 'F', 'days_purchase_to_censor_fail'].to_numpy()
-censors = first_fails.loc[first_fails['censor_fail_status'] == 'C', 'days_purchase_to_censor_fail'].to_numpy()
+fails = first_fails.loc[first_fails['censor_fail_status'] == 'F', 'days_purchase_to_censor_fail'].to_numpy()/365
+censors = first_fails.loc[first_fails['censor_fail_status'] == 'C', 'days_purchase_to_censor_fail'].to_numpy()/365
 
 #####  LET'S CHECK WHICH DISTRIBUTION HAS THE BEST FIT FOR THIS SIMULATED DATA
 from reliability.Fitters import Fit_Everything
@@ -43,8 +43,10 @@ results.best_distribution_probability_plot.savefig("plots/Probability Plot of Be
 results.PP_plot.savefig("plots/SemiParametric PP Plots of All Distribution Fits.jpg")
 print('The best fitting distribution was', results.best_distribution_name)
 
+results.best_distribution.SF(xmin=0, xmax=5, label='Weibull Mixture SF')
+plt.xlabel("Years since Purchase")
+
 '''
-Results from Fit_Everything:
 Results from Fit_Everything:
 Analysis method: MLE
 Failures / Right censored: 7614/30000 (79.75754% right censored) 
@@ -66,10 +68,8 @@ Weibull_Mixture                           213.306 0.989545  9891.7 0.987435     
       Gumbel_2P                                                                                   1655.77 562.319                    -74666.2 149336 149353 117958       TNC 
 
 
-The best fitting distribution was Weibull_2P which had parameters [11.27730641  3.30300712  0.        ]
+The best fitting distribution was Weibull_Mixture
 '''
-
-
 
 
 

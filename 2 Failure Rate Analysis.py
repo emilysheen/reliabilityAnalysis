@@ -82,12 +82,12 @@ plt.figure(figsize=(12, 5))
 plt.suptitle("Survival Functions for First Failures\nIgnoring Censoring", fontsize=16)
 plt.subplot(121)
 fit = Fit_Weibull_2P(failures=fails, show_probability_plot=True, print_results=False)  # fits a Weibull distribution to the data and generates the probability plot
-plt.xlabel('Days to Failure')
+# plt.xlabel('Days to Failure')
 plt.subplot(122)
 fit.distribution.SF(label='Weibull SF: Failures Only')  # uses the distribution object from Fit_Weibull_2P and plots the survival function
 KaplanMeier(failures=fails, label='Kaplan Meier SF: Failures Only')
 plot_points(failures=fails, func='SF', color='yellow')  # overlays the original data on the survival function
-plt.xlabel('Days to Failure')
+plt.xlabel('Years to Failure')
 plt.legend()
 plt.show()
 plt.savefig("plots/KM and Weibull Survival Functions - No Censoring.jpg")
@@ -97,12 +97,12 @@ plt.figure(figsize=(12, 5))
 plt.suptitle("Survival Functions for First Failures\nWith Censoring", fontsize=16)
 plt.subplot(121)
 fit2 = Fit_Weibull_2P(failures=fails, right_censored=censors, show_probability_plot=True, print_results=False)  # fits a Weibull distribution to the data and generates the probability plot
-plt.xlabel('Days to Failure')
+# plt.xlabel('Days to Failure')
 plt.subplot(122)
-fit2.distribution.SF(label='Weibull SF: Failures + Right Censoring', xmin=0, xmax=1200)  # uses the distribution object from Fit_Weibull_2P and plots the survival function
+fit2.distribution.SF(label='Weibull SF: Failures + Right Censoring', xmin=0, xmax=3)  # uses the distribution object from Fit_Weibull_2P and plots the survival function
 KaplanMeier(failures=fails, right_censored=censors, label='Kaplan Meier SF: Failures + Right Censoring')
 plot_points(failures=fails, right_censored=censors, func='SF', color='yellow')  # overlays the original data on the survival function
-plt.xlabel('Days to Failure')
+plt.xlabel('Years to Failure')
 plt.legend()
 plt.show()
 plt.savefig("plots/KM and Weibull Survival Functions - With Censoring.jpg")

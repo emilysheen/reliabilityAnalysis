@@ -87,7 +87,10 @@ function does not reach 0.  We saw in the censored KM plot above that the surviv
 Because the simulated data includes many vehicles with 0 failures during the NVLW, but the Trucks and Heavy Duty Truck
 subpopulation often had multiple failures in early life, the defective subpopulation model will be a strong fit when
 we fit parametric models to the data in the following section.
-6) **The Mean Cumulative Function (MCF)** is a non-parametric 
+6) **The Mean Cumulative Function (MCF)** is a non-parametric curve computed similarly to the Kaplan-Meier curve.
+However, the MCF accounts for multiple failures possible for each vehicle, and displays the average cumulative number
+of repairs for any vehicle accounting for the right censoring.  While KM curves are based on time until first failure, 
+MCF curves are based on time until every failure.
 
 ### Results of Fitting All Reliability Distributions on the Simulated Data
 Without separating the data by car type or model year, I fit all vehicles' failure and censor data to all available 
@@ -129,4 +132,10 @@ have extremely poor fit, as evidenced by the large bending deviation between the
 ![SF Including Censoring](https://github.com/emilysheen/reliabilityAnalysis/blob/master/plots/Probability%20Plots%20of%20All%20Distribution%20Fits.jpg?raw=true)
 
 
+### Results of MCF Curve Plotting by Model Year and Car Type
+
+After fitting non-parametric MCF curves to all vehicle types and model years, we find that 2020 and 
+2021 Trucks and Heavy Duty Trucks exhibit much high failure rates than all other car types and model years.
+
+![SF Including Censoring](https://github.com/emilysheen/reliabilityAnalysis/blob/master/plots/Probability%20Plots%20of%20All%20Distribution%20Fits.jpg?raw=true)
 

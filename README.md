@@ -87,6 +87,7 @@ function does not reach 0.  We saw in the censored KM plot above that the surviv
 Because the simulated data includes many vehicles with 0 failures during the NVLW, but the Trucks and Heavy Duty Truck
 subpopulation often had multiple failures in early life, the defective subpopulation model will be a strong fit when
 we fit parametric models to the data in the following section.
+6) **The Mean Cumulative Function (MCF)** is a non-parametric 
 
 ### Results of Fitting All Reliability Distributions on the Simulated Data
 Without separating the data by car type or model year, I fit all vehicles' failure and censor data to all available 

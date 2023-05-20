@@ -74,11 +74,12 @@ print(car_type_mileage.sort_values(by='car_type'))
 # Let's generate a random number of engine block failures for each vehicle in our sample
 # Set lambda values for each car type and model year
 
-lambdas = pd.DataFrame({"car_type": cars['car_type'].unique().tolist() * 3,
+lambdas = pd.DataFrame({"car_type": ['Truck', 'Sedan', 'Heavy Duty Truck', 'Mid-Size SUV', 'Compact SUV', 'Convertible',
+                                     'Electric Vehicle', 'Minivan', 'Hatchback', 'Large SUV'] * 3,
                         "model_year": [2019]*10 + [2020]*10 + [2021]*10,
-                        "lambda": [0.1, 0.2, 0.3, 0.1, 0.5, 0.1, 0.2, 0.2, 0.1, 0.01,
-                                   0.01, 0.3,  3, 0.1,  3,  0.2, 0.3, 0.3, 0.1, 0.01,
-                                   0.01, 0.2,  3, 0.2,  3,  0.2, 0.2, 0.2, 0.1, 0.01]})
+                        "lambda": [0.3, 0.1, 0.5, 0.2, 0.1, 0.1, 0.01,  0.2, 0.1, 0.2,
+                                   3,  0.01, 3,   0.3, 0.1, 0.2, 0.01,  0.3, 0.02, 0.3,
+                                   3,  0.01, 3,   0.2, 0.2, 0.2, 0.01,  0.2, 0.1,  0.2]})
 print(lambdas)
 
 print(cars.groupby(['car_type', 'model_year']).agg(

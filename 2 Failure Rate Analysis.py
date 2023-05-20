@@ -278,8 +278,7 @@ Goodness of fit   Value
 #########################################################################################
 
 ### MCF Example
-from reliability.Repairable_systems import MCF_nonparametric
-from reliability.Datasets import MCF_2
+from reliability.Repairable_systems import MCF_nonparametric, MCF_parametric
 import matplotlib.pyplot as plt
 
 times = []
@@ -294,8 +293,6 @@ plt.show()
 plt.savefig("plots/NonParametric MCF for All Vehicles.jpg")
 plt.close()
 
-from reliability.Repairable_systems import MCF_parametric
-times = MCF_2().times
 MCF_parametric(data=times)
 plt.xlabel("Days since NVLW Start")
 plt.show()
@@ -316,6 +313,7 @@ dat = cars.merge(fails, on=['vin', 'purchase_date', 'n_fails', 'nvlw_end_date'],
 
 # pd.set_option('display.max_columns', None)
 dat.head()
+dat.columns
 
 car_types = dat['car_type'].unique()
 model_years = dat['model_year'].unique()
@@ -325,6 +323,7 @@ model_years = dat['model_year'].unique()
 #         globals()['time_%s' % cart + str(my)] = 'Hello'
 
 import re
+import math
 regex = re.compile('[^a-zA-Z]')
 #First parameter is the replacement, second parameter is your input string
 # regex.sub('', 'ab3d*E')
@@ -333,27 +332,109 @@ regex = re.compile('[^a-zA-Z]')
 for cart in car_types:
     for my in model_years:
         cart_name = regex.sub('', cart)
-        ldat = dat.loc[(dat['model_year'] == my) & (dat['car_type'] == cart), ['vin', 'days_purchase_to_censor_fail']].sort_values(
+        ldat = dat.loc[(dat['model_year'] == my) & (dat['car_type'] == cart), ['vin', 'annual_mileage', 'days_purchase_to_censor_fail']].sort_values(
             by=['vin', 'days_purchase_to_censor_fail']).reset_index(drop=True)
         ltimes = []
+        lmiles = []
         for vin in ldat['vin'].unique():
-            vin_times = (df.loc[df['vin'] == vin, 'days_purchase_to_censor_fail']).tolist()
-            ltimes.append(vin_times)
-        globals()['times_%s' % str(my) + cart] = ltimes
+            vin_years = ((ldat.loc[ldat['vin'] == vin, 'days_purchase_to_censor_fail'])/365).tolist()
+            vin_kmiles = ((ldat.loc[ldat['vin'] == vin, 'days_purchase_to_censor_fail'])/1095*(ldat.loc[ldat['vin'] == vin, 'annual_mileage'])*3/1000).tolist()
+            ltimes.append(vin_years)
+            lmiles.append(vin_kmiles)
+        globals()['years_%s' % str(my) + cart_name] = ltimes
+        globals()['kmiles_%s' % str(my) + cart_name] = lmiles
         # Plot and save both MCF's
         plt.figure(figsize=(12, 5))
-        plt.suptitle("MCFs for " + str(my) + " " + cart, fontsize=16)
+        plt.suptitle("MCFs (Years) for " + str(my) + " " + cart, fontsize=16)
         plt.subplot(121)
         MCF_nonparametric(data=ltimes)
-        plt.xlabel('Days since NVLW Start')
+        plt.xlabel('Years since NVLW Start')
         plt.title('Non-Parametric MCF')
         plt.subplot(122)
         MCF_parametric(data=ltimes)
         plt.title("Parametric MCF")
-        plt.xlabel("Days since NVLW Start")
+        plt.xlabel("Years since NVLW Start")
         plt.show()
-        plt.savefig("plots/MCFs by Vehicle and MY/MCF for " + str(my) + " "+ cart + ".jpg")
+        plt.savefig("plots/MCFs by Vehicle and MY/MCF in Years for " + str(my) + " "+ cart + ".jpg")
         plt.close()
+        plt.figure(figsize=(12, 5))
+        plt.suptitle("MCFs (Miles) for " + str(my) + " " + cart, fontsize=16)
+        plt.subplot(121)
+        MCF_nonparametric(data=lmiles)
+        plt.xlabel('Miles (000\'s) since NVLW Start')
+        plt.title('Non-Parametric MCF')
+        plt.subplot(122)
+        MCF_parametric(data=lmiles)
+        plt.title("Parametric MCF")
+        plt.xlabel("Miles (000\'s) since NVLW Start")
+        plt.show()
+        plt.savefig("plots/MCFs by Vehicle and MY/MCF in Miles for " + str(my) + " " + cart + ".jpg")
+        plt.close()
+
+# Let's try to make plots with 2019 - 2021 all shown on the same plot for each car_type
+# LEFT = Years Sedan MY 19-21, RIGHT = Miles Sedan MY 19-21
+# Try first with Sedan
+
+from math import ceil
+from matplotlib.lines import Line2D
+
+# First make a dataset of max values
+cart_maxes = pd.DataFrame({'car_type': car_types, 'cart_mcf_year_max': None, 'cart_mcf_kmile_max': None,})
+for index, row in cart_maxes.iterrows():
+    cart = row['car_type']
+    cart_name = regex.sub('', cart)
+    s19 = MCF_nonparametric(data=globals()['years_2019%s' % cart_name], print_results=False, show_plot=False).results
+    s19 = s19.loc[s19['MCF'] != '']
+    s20 = MCF_nonparametric(data=globals()['years_2020%s' % cart_name], print_results=False, show_plot=False).results
+    s20 = s20.loc[s20['MCF'] != '']
+    s21 = MCF_nonparametric(data=globals()['years_2021%s' % cart_name], print_results=False, show_plot=False).results
+    s21 = s21.loc[s21['MCF'] != '']
+    uplim_year = float(ceil(max(s21['MCF_upper'].max(), s20['MCF_upper'].max(), s19['MCF_upper'].max())*100)/100)
+    cart_maxes.at[index, 'cart_mcf_year_max'] = uplim_year
+    s19 = MCF_nonparametric(data=globals()['kmiles_2019%s' % cart_name], print_results=False, show_plot=False).results
+    s19 = s19.loc[s19['MCF'] != '']
+    s20 = MCF_nonparametric(data=globals()['kmiles_2020%s' % cart_name], print_results=False, show_plot=False).results
+    s20 = s20.loc[s20['MCF'] != '']
+    s21 = MCF_nonparametric(data=globals()['kmiles_2021%s' % cart_name], print_results=False, show_plot=False).results
+    s21 = s21.loc[s21['MCF'] != '']
+    uplim_kmiles = ceil(max(s21['MCF_upper'].max(), s20['MCF_upper'].max(), s19['MCF_upper'].max()) * 100) / 100
+    cart_maxes.at[index, 'cart_mcf_kmile_max'] = uplim_kmiles
+
+
+for index, row in cart_maxes.iterrows():
+    cart = row['car_type']
+    cart_name = regex.sub('', cart)
+    ymax = row['cart_mcf_year_max']
+    mmax = row['cart_mcf_kmile_max']
+    plt.figure(figsize=(12, 5))
+    plt.suptitle("MCFs for 2019 - 2021 " + cart + "s", fontsize=16)
+    plt.subplot(121)
+    MCF_nonparametric(data=globals()['years_2019%s' % cart_name], color='red', print_results=False)
+    MCF_nonparametric(data=globals()['years_2020%s' % cart_name], color='green', print_results=False)
+    MCF_nonparametric(data=globals()['years_2021%s' % cart_name], color ='blue', print_results=False, show_plot=True)
+    plt.xlabel('Years since NVLW Start')
+    plt.title('Nonparametric MCF (Years)')
+    plt.xlim(0, 3.1)
+    plt.ylim(0, ymax)
+    plt.legend([Line2D([0], [0], color='red', lw=2),
+                Line2D([0], [0], color='green', lw=2),
+                Line2D([0], [0], color='blue', lw=2)], ['2019', '2020', '2021'])
+    plt.show()
+    plt.subplot(122)
+    # max_miles = math.ceil(max(dat.loc[dat['car_type'] == 'Sedan', 'annual_mileage'])*3/1000)
+    MCF_nonparametric(data=globals()['kmiles_2019%s' % cart_name], color='red', print_results=False)
+    MCF_nonparametric(data=globals()['kmiles_2020%s' % cart_name], color='green', print_results=False)
+    MCF_nonparametric(data=globals()['kmiles_2021%s' % cart_name], color='blue', print_results=False)
+    plt.title("Nonparametric MCF (Miles)")
+    plt.xlabel("Miles (000\'s) since NVLW Start")
+    plt.xlim(0, 36.5)
+    plt.ylim(0, mmax)
+    plt.legend([Line2D([0], [0], color='red', lw=2),
+                Line2D([0], [0], color='green', lw=2),
+                Line2D([0], [0], color='blue', lw=2)], ['2019', '2020', '2021'])
+    plt.show()
+    plt.savefig("plots/MCFs by Vehicle and MY/Nonparametric MCFs for 2019-21 "+cart_name+".jpg")
+
 
 
 # After splitting up the MCF's for each model year and vehicle type, we see that Trucks and Heavy Duty Trucks have

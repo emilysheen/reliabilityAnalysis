@@ -136,7 +136,16 @@ have extremely poor fit, as evidenced by the large bending deviation between the
 
 After fitting non-parametric MCF curves to all vehicle types and model years, we find that 2020 and 
 2021 Trucks and Heavy Duty Trucks exhibit much high failure rates than all other car types and model years.
-After plotting both 
+When we combine all non-trucks and trucks into their 2019-2021 MCFs, we can see these differences in Trucks
+and Heavy Duty Trucks.
 
-![SF Including Censoring](https://github.com/emilysheen/reliabilityAnalysis/blob/master/plots/Probability%20Plots%20of%20All%20Distribution%20Fits.jpg?raw=true)
+![Truck Non-Truck Year MCFs](https://github.com/emilysheen/reliabilityAnalysis/blob/master/plots/MCFs%20by%20Vehicle%20and%20MY/Nonparametric%20MCFs%20(Years)%20for%202019-21%20Trucks%20and%20Non-Trucks.jpg?raw=true)
 
+Looking by mileage instead of years since purchase date, the story is very similar:
+
+![Truck Non-Truck Mile MCFs](https://github.com/emilysheen/reliabilityAnalysis/blob/master/plots/MCFs%20by%20Vehicle%20and%20MY/Nonparametric%20MCFs%20(K%20Miles)%20for%202019-21%20Trucks%20and%20Non-Trucks.jpg?raw=true)
+
+We notice that the shape of the year and mileage plots look very similar.  This is due to how the data was simulated.
+Although I assumed different vehicles experienced different annual mileage, the mileage at the time of failure
+is assumed to be directly proportional to the driver's overall annual mileage.  In practice, the shape of curves 
+based on days since purchase or miles since purchase are likely to look very different.

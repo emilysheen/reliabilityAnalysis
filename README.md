@@ -136,6 +136,7 @@ have extremely poor fit, as evidenced by the large bending deviation between the
 
 After fitting non-parametric MCF curves to all vehicle types and model years, we find that 2020 and 
 2021 Trucks and Heavy Duty Trucks exhibit much high failure rates than all other car types and model years.
+After plotting both 
 
 ![SF Including Censoring](https://github.com/emilysheen/reliabilityAnalysis/blob/master/plots/Probability%20Plots%20of%20All%20Distribution%20Fits.jpg?raw=true)
 

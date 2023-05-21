@@ -439,12 +439,83 @@ for index, row in cart_maxes.iterrows():
 
 # After splitting up the MCF's for each model year and vehicle type, we see that Trucks and Heavy Duty Trucks have
 # the largest rates of failure during the 3 year limited warranty.
-#  * 2019 TRUCKS reach 0.4 mean cumulative repairs by the end of the 3 year limited warranty
-#  * 2019 HEAVY DUTY TRUCKS reach 0.8 mean cumulative failures per truck before the end of the NVLW
-#  * 2020 TRUCKS reach ALMOST 5 mean cumulative repairs by the end of the 3 year limited warranty
-#  * 2020 HEAVY DUTY TRUCKS reach ALMOST 5 mean cumulative failures per truck before the end of the NVLW
-#  * 2021 TRUCKS reach 4 mean cumulative failures per truck before the end of the NVLW
-#  * 2021 HEAVY DUTY TRUCKS reach OVER 5 mean cumulative failures per truck before the end of the NVLW
-
 # FROM THESE MCF PLOTS, we see that the problem starts to pick up in 2020 model year trucks, and persists in the 2021 model year
-# We also notice visually that the parametric
+
+years_2019nontrucks = []
+years_2020nontrucks = []
+years_2021nontrucks = []
+kmiles_2019nontrucks = []
+kmiles_2020nontrucks = []
+kmiles_2021nontrucks = []
+non_truck = ['Minivan', 'Convertible', 'Mid-Size SUV', 'Electric Vehicle', 'Hatchback', 'Compact SUV', 'Large SUV', 'Sedan']
+for cart in non_truck:
+    cart_name = regex.sub('', cart)
+    years_2019nontrucks = years_2019nontrucks + globals()['years_2019%s' % cart_name]
+    years_2020nontrucks = years_2020nontrucks + globals()['years_2020%s' % cart_name]
+    years_2021nontrucks = years_2021nontrucks + globals()['years_2021%s' % cart_name]
+    kmiles_2019nontrucks = kmiles_2019nontrucks + globals()['kmiles_2019%s' % cart_name]
+    kmiles_2020nontrucks = kmiles_2020nontrucks + globals()['kmiles_2020%s' % cart_name]
+    kmiles_2021nontrucks = kmiles_2021nontrucks + globals()['kmiles_2021%s' % cart_name]
+years_2019trucks = years_2019Truck + years_2019HeavyDutyTruck
+years_2020trucks = years_2020Truck + years_2020HeavyDutyTruck
+years_2021trucks = years_2021Truck + years_2021HeavyDutyTruck
+kmiles_2019trucks = kmiles_2019Truck + kmiles_2019HeavyDutyTruck
+kmiles_2020trucks = kmiles_2020Truck + kmiles_2020HeavyDutyTruck
+kmiles_2021trucks = kmiles_2021Truck + kmiles_2021HeavyDutyTruck
+
+
+plt.figure(figsize=(12, 5))
+plt.suptitle("Nonparametric MCFs for 2019 - 2021 Trucks and Non-Trucks", fontsize=16)
+plt.subplot(121)
+MCF_nonparametric(data=years_2019nontrucks, color='red', print_results=False)
+MCF_nonparametric(data=years_2020nontrucks, color='green', print_results=False)
+MCF_nonparametric(data=years_2021nontrucks, color ='blue', print_results=False, show_plot=True)
+plt.xlabel('Years since NVLW Start')
+plt.title('Non-Trucks MCF (Years)')
+plt.xlim(0, 3.1)
+plt.legend([Line2D([0], [0], color='red', lw=2),
+            Line2D([0], [0], color='green', lw=2),
+            Line2D([0], [0], color='blue', lw=2)], ['2019', '2020', '2021'])
+plt.show()
+plt.subplot(122)
+MCF_nonparametric(data=years_2019trucks, color='red', print_results=False)
+MCF_nonparametric(data=years_2020trucks, color='green', print_results=False)
+MCF_nonparametric(data=years_2021trucks, color='blue', print_results=False)
+plt.title("Trucks MCF (Years)")
+plt.xlabel("Years since NVLW Start") # Miles (000\'s) since NVLW Start")
+plt.xlim(0, 3.1)
+# plt.ylim(0, mmax)
+plt.legend([Line2D([0], [0], color='red', lw=2),
+            Line2D([0], [0], color='green', lw=2),
+            Line2D([0], [0], color='blue', lw=2)], ['2019', '2020', '2021'])
+plt.show()
+plt.savefig("plots/MCFs by Vehicle and MY/Nonparametric MCFs (Years) for 2019-21 Trucks and Non-Trucks.jpg")
+
+
+plt.figure(figsize=(12, 5))
+plt.suptitle("Nonparametric MCFs (Miles) for 2019 - 2021 Trucks and Non-Trucks", fontsize=16)
+plt.subplot(121)
+MCF_nonparametric(data=kmiles_2019nontrucks, color='red', print_results=False)
+MCF_nonparametric(data=kmiles_2020nontrucks, color='green', print_results=False)
+MCF_nonparametric(data=kmiles_2021nontrucks, color ='blue', print_results=False, show_plot=True)
+plt.xlabel('Miles (000\'s) since NVLW Start')
+plt.title('Non-Trucks MCF (K Miles)')
+plt.xlim(0, 36.1)
+plt.legend([Line2D([0], [0], color='red', lw=2),
+            Line2D([0], [0], color='green', lw=2),
+            Line2D([0], [0], color='blue', lw=2)], ['2019', '2020', '2021'])
+plt.show()
+plt.subplot(122)
+MCF_nonparametric(data=kmiles_2019trucks, color='red', print_results=False)
+MCF_nonparametric(data=kmiles_2020trucks, color='green', print_results=False)
+MCF_nonparametric(data=kmiles_2021trucks, color='blue', print_results=False)
+plt.title("Trucks MCF (K Miles)")
+plt.xlabel("Miles (000\'s) since NVLW Start") # Miles (000\'s) since NVLW Start")
+plt.xlim(0, 36.1)
+# plt.ylim(0, mmax)
+plt.legend([Line2D([0], [0], color='red', lw=2),
+            Line2D([0], [0], color='green', lw=2),
+            Line2D([0], [0], color='blue', lw=2)], ['2019', '2020', '2021'])
+plt.show()
+plt.savefig("plots/MCFs by Vehicle and MY/Nonparametric MCFs (K Miles) for 2019-21 Trucks and Non-Trucks.jpg")
+

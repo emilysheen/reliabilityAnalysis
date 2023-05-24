@@ -141,15 +141,18 @@ and Heavy Duty Trucks.
 
 ![Truck Non-Truck Year MCFs](https://github.com/emilysheen/reliabilityAnalysis/blob/master/plots/MCFs%20by%20Vehicle%20and%20MY/Nonparametric%20MCFs%20(Years)%20for%202019-21%20Trucks%20and%20Non-Trucks.jpg?raw=true)
 
-Looking by mileage instead of years since purchase date, the story is very similar:
-
-![Truck Non-Truck Mile MCFs](https://github.com/emilysheen/reliabilityAnalysis/blob/master/plots/MCFs%20by%20Vehicle%20and%20MY/Nonparametric%20MCFs%20(K%20Miles)%20for%202019-21%20Trucks%20and%20Non-Trucks.jpg?raw=true)
-
-We notice that the shape of the year and mileage plots look very similar.  This is due to how the data was simulated.
+Looking by mileage instead of years since purchase date with this data does not illuminate differences.  We notice that 
+the shape of the year and mileage plots look very similar, due to how the data was simulated.
 Although I assumed different vehicles experienced different annual mileage, the mileage at the time of failure
 is assumed to be directly proportional to the driver's overall annual mileage.  In practice, the shape of curves 
 based on days since purchase or miles since purchase are likely to look very different due to irregularities in driving patterns.
 
+![Truck Non-Truck Mile MCFs](https://github.com/emilysheen/reliabilityAnalysis/blob/master/plots/MCFs%20by%20Vehicle%20and%20MY/Nonparametric%20MCFs%20(K%20Miles)%20for%202019-21%20Trucks%20and%20Non-Trucks.jpg?raw=true)
+
+One benefit to using mileage instead of age to show failure emergence is that we 
+can use heavy drivers' patterns to extend the MCFs and give predictions for light drivers that are farther away from
+ending their NVLWs.  While the 2021 model year vehicles' Years to Failure MCF curves end at 2.5 years, looking by mileage
+gives more complete predictions out to 36K miles (when heavier drivers mileage out of their warranties).
 
 ## 3 Statistical Models.py
 

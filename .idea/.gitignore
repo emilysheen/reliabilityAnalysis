@@ -5,3 +5,4 @@
 .DS_Store
 **/.DS_Store
 vin_active_warranty.csv
+vin_active_warranty_train_test.csv

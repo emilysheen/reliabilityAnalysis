@@ -42,56 +42,67 @@ def month_diff(end_dt, start_dt):
 
 dat['duration'] = dat.apply(lambda x: month_diff(x.interval_start, x.purchase_date), axis=1)
 
-dat.head()
-
-###  For every interval start/end, the # warranties at risk is all warranties with a start date
-sqlquery = "SELECT distinct interval_start, interval_end FROM dat;"
-# specify globals() or locals() using the following helper function
-mysql = lambda q: ps.sqldf(q, globals())
-mysql("SELECT distinct interval_start, interval_end FROM dat;")
-ps.sqldf(sqlquery, locals())
-
-
-
-# For grouped data by purchase cohort,
-print(dat.groupby(['cohort_year', 'cohort_month', 'interval_start', 'interval_end', 'duration', 'exposure_month']).agg(
-    new_warranties =pd.NamedAgg(column='annual_mileage', aggfunc=np.mean),
-    avg_mileage = pd.NamedAgg(column='annual_mileage', aggfunc=np.mean),
-    sd_mileage = pd.NamedAgg(column='annual_mileage', aggfunc=np.std),
-    n_cars = pd.NamedAgg(column='vin', aggfunc='count')
-))
-
-def check_warranties (dat):
-    grouped = dat.groupby(['cohort_year', 'cohort_month', 'interval_start', 'interval_end', 'duration','exposure_month'])
-    min_date = row['interval_start']
-    max_date = row['interval_end']
-    num_warranties = len(dat.loc[dat['purchase_date'] < min_date and dat['nvlw_end_date'] > max_date])
-    return(num_warranties)
-
-def add_days (row):
-    mileout_days = round(row['days_to_mileout'])
-    mileout = row['purchase_date'] + datetime.timedelta(days=mileout_days)
-    mileout = pd.to_datetime(mileout, format='%Y-%m-%d')
-    return(mileout)
-
-dat.groupby(['cohort_year', 'cohort_month', 'interval_start', 'interval_end', 'exposure_month']).agg(
-
-)
-
-
-
-pivot = dat.pivot_table(columns= ['cohort_year', 'cohort_month', 'interval_start', 'interval_end', 'censor_fail_status'],
-                        values= ['']
-                        aggfunc ='count')
-print (pivot)
-
-
-
 # To get the month-by-month format with # active warranties each month and # failures each month, need to agg data
-# sd = "2018-10-01"
-# start_date = datetime.strptime(sd, "%Y-%m-%d")
+###  For every interval start/end, the # warranties at risk is all warranties with a start date
+# First, our list of dates
+min(dat['interval_start'])
+min(dat['purchase_date']) # min is 2018-10-05, starting interval is 2018-10-01 to 2018-10-31
 
-day_dat = dat.groupby(['cohort_year', 'cohort_month', ])
+cutoff_dt = max(pd.to_datetime(dat['censor_fail_date']))
+cur_dt = pd.to_datetime("2018-10-01")
+int_starts = []
+int_ends = []
+warranties_at_risk = []
+while cur_dt < cutoff_dt:
+    int_starts.append(cur_dt) # Add cur_dt to int_starts list
+    end_dt = cur_dt + pd.DateOffset(months=1) + timedelta(days=-1)# Compute int_ends
+    int_ends.append(end_dt)
+    cur_dt = cur_dt + pd.DateOffset(months=1)
+
+int_dat = pd.DataFrame({'interval_start' : int_starts, 'interval_end' : int_ends})
+vin_dat = cars[['vin', 'purchase_date', 'nvlw_end_date', 'model_year', 'car_type']]
+vin_dat['purchase_date'] = pd.to_datetime(vin_dat['purchase_date'])
+vin_dat['nvlw_end_date'] = pd.to_datetime(vin_dat['nvlw_end_date'])
+int_vin_dat = pd.merge(vin_dat, int_dat, how ="cross")
+def check_active (row):
+    if row['purchase_date'] < row['interval_end'] and row['nvlw_end_date'] > row['interval_start']:
+        return(True)
+    else:
+        return(False)
+
+for index, row in int_vin_dat.iterrows():
+    int_vin_dat.at[index, 'active_warranty'] = check_active(row)
+
+# Summarize at the interval, model_year, car_type level
+int_vin_dat.to_csv("vin_active_warranty.csv", header=True, index=False)
+
+my_ct_active = int_vin_dat.groupby(['model_year', 'car_type', 'interval_start', 'interval_end']).agg(
+    active_warranties = pd.NamedAgg(column='active_warranty', aggfunc='sum')).reset_index()
+    # vins = pd.NamedAgg(column='vin', aggfunc=pd.Series.nunique)
+
+
+def check_fails (dat):
+    grouped = dat.groupby(['interval_start', 'interval_end', 'duration','exposure_month', 'car_type', 'model_year', 'censor_fail_status'])
+    results = pd.DataFrame({'n_cf' : grouped.size()}).reset_index()
+    results = pd.pivot(results, index = ['car_type', 'model_year', 'interval_start', 'interval_end', 'duration','exposure_month'],
+                       columns='censor_fail_status', values='n_cf').reset_index().rename(
+        columns={'C':'n_censored', 'F':'n_failed'})
+    return(results)
+
+mdat = check_fails(dat)
+len(mdat)
+len(my_ct_active)
+mdat = pd.merge(mdat, my_ct_active, on = ['interval_start', 'interval_end', 'model_year', 'car_type'], how='left')
+mdat.shape # (8154, 9)
+mdat.to_csv("monthly_failures.csv", header=True, index=False)
+
+sum(mdat.duplicated()) # No duplicates
+
+
+
+
+
+
 
 
 # Let's try to fit the Poisson regression

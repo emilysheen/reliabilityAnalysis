@@ -1,5 +1,7 @@
 # Default ignored files
 /shelf/
 /workspace.xml
+# I added the following files
 .DS_Store
 **/.DS_Store
+vin_active_warranty.csv

@@ -45,8 +45,11 @@ dat['duration'] = dat.apply(lambda x: month_diff(x.interval_start, x.purchase_da
 dat.head()
 
 ###  For every interval start/end, the # warranties at risk is all warranties with a start date
-
-
+sqlquery = "SELECT distinct interval_start, interval_end FROM dat;"
+# specify globals() or locals() using the following helper function
+mysql = lambda q: ps.sqldf(q, globals())
+mysql("SELECT distinct interval_start, interval_end FROM dat;")
+ps.sqldf(sqlquery, locals())
 
 
 

@@ -1,0 +1,43 @@
+[core]
+        repositoryformatversion = 0
+        filemode = true
+        bare = false
+        logallrefupdates = true
+        ignorecase = true
+        precomposeunicode = true
+[remote "origin"]
+        url = https://github.com/emilysheen/reliabilityAnalysis.git
+        fetch = +refs/heads/*:refs/remotes/origin/*
+[branch "master"]
+        remote = origin
+        merge = refs/heads/master
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+^G Get Help                           ^O WriteOut                           ^R Read File                          ^Y Prev Pg                            ^K Cut Text                           ^C Cur Pos
+^X Exit                               ^J Justify                            ^W Where is                           ^V Next Pg                            ^U UnCut Text                         ^T To Spell
+

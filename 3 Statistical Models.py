@@ -12,10 +12,6 @@ from pygam.datasets import chicago
 from datetime import datetime, timedelta
 import dateutil
 
-X, y = chicago(return_X_y=True)
-
-gam = PoissonGAM(s(0, n_splines=200) + te(3, 1) + s(2)).fit(X, y)
-
 # Load and transform data into desired form
 # pd.set_option('display.max_columns', None)
 fails = pd.read_csv('failures_censors_data.csv').sort_values(by=['purchase_date', 'vin', 'days_purchase_to_censor_fail']).reset_index(drop=True)
@@ -44,7 +40,7 @@ dat['duration'] = dat.apply(lambda x: month_diff(x.interval_start, x.purchase_da
 
 # To get the month-by-month format with # active warranties each month and # failures each month, need to agg data
 ###  For every interval start/end, the # warranties at risk is all warranties with a start date
-# First, our list of dates
+# START HERE
 min(dat['interval_start'])
 min(dat['purchase_date']) # min is 2018-10-05, starting interval is 2018-10-01 to 2018-10-31
 
@@ -61,8 +57,11 @@ while cur_dt < cutoff_dt:
 
 int_dat = pd.DataFrame({'interval_start' : int_starts, 'interval_end' : int_ends})
 vin_dat = cars[['vin', 'purchase_date', 'nvlw_end_date', 'model_year', 'car_type']]
-vin_dat['purchase_date'] = pd.to_datetime(vin_dat['purchase_date'])
-vin_dat['nvlw_end_date'] = pd.to_datetime(vin_dat['nvlw_end_date'])
+vin_dat.loc[:, ("purchase_date", "nvlw_end_date")] = vin_dat.loc[:, ("purchase_date", "nvlw_end_date")].copy().apply(pd.to_datetime)
+# vin_dat[["purchase_date", "nvlw_end_date"]] = vin_dat[["purchase_date", "nvlw_end_date"]].apply(pd.to_datetime)
+# vin_dat['purchase_date'] = vin_dat['purchase_date'].apply(pd.to_datetime)
+# vin_dat['purchase_date'] = pd.to_datetime(vin_dat['purchase_date'])
+# vin_dat['nvlw_end_date'] = pd.to_datetime(vin_dat['nvlw_end_date'])
 int_vin_dat = pd.merge(vin_dat, int_dat, how ="cross")
 def check_active (row):
     if row['purchase_date'] < row['interval_end'] and row['nvlw_end_date'] > row['interval_start']:
@@ -94,19 +93,24 @@ len(mdat)
 len(my_ct_active)
 mdat = pd.merge(mdat, my_ct_active, on = ['interval_start', 'interval_end', 'model_year', 'car_type'], how='left')
 mdat.shape # (8154, 9)
-mdat.to_csv("monthly_failures.csv", header=True, index=False)
 
 sum(mdat.duplicated()) # No duplicates
+mdat = mdat.fillna(0) # fill all the na values with 0
+mdat.head(100)
+mdat['ln_warranties'] = np.log(mdat['active_warranties'])
 
+mdat.to_csv("monthly_failures.csv", header=True, index=False)
 
-
-
-
-
-
-
+#########################################################################################
 # Let's try to fit the Poisson regression
-datX = dat[['vin', 'model_year', 'car_type', 'annual_mileage']]
+
+X, y = chicago(return_X_y=True)
+
+gam = PoissonGAM(s(0, n_splines=200) + te(3, 1) + s(2)).fit(X, y)
+
+
+
+datX = mdat[['vin', 'model_year', 'car_type', 'annual_mileage']]
 
 gam1 = PoissonGAM()
 

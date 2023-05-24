@@ -6,7 +6,7 @@ the observation window, for simplicity.  I assume that the failure rates pick up
 Truck and Heavy Duty Truck types.  This way, the differences in rates between vehicle types and model years can be visualized with 
 differences in their Mean Cumulative Functions.
 
-## 1 create data.py 
+## 1 Create Data.py 
 simulates the vehicle and failures datasets, including the purchase date and assumed NVLW end date.
 New Vehicle Limited Warranties (NVLW's) are termed as 36 months / 36,000 miles (whichever comes sooner).  In order to simulate
 correct censoring dates, I first randomly generate annual mileage, using unique mean/SD mileage for each car type and model year.  
@@ -148,4 +148,8 @@ Looking by mileage instead of years since purchase date, the story is very simil
 We notice that the shape of the year and mileage plots look very similar.  This is due to how the data was simulated.
 Although I assumed different vehicles experienced different annual mileage, the mileage at the time of failure
 is assumed to be directly proportional to the driver's overall annual mileage.  In practice, the shape of curves 
-based on days since purchase or miles since purchase are likely to look very different.
+based on days since purchase or miles since purchase are likely to look very different due to irregularities in driving patterns.
+
+
+## 3 Statistical Models.py
+

@@ -159,4 +159,26 @@ gives more complete predictions out to 36K miles (when heavier drivers mileage o
 
 Generalized Additive Models (GAMs) are semi-parametric models that allow for some or all features to have a non-linear 
 relationship with the response variable, number of failures.  Splines, or non-linear effects on the response, are added
-together with linear and factor effects to generate predictions.
+together with linear and factor effects to generate predictions.  The non-linear splines add a significant amount of
+flexibility to time-to-failure models.  In a regular Poisson linear model, the failure rate $\lambda$ is fixed
+for the duration of the observation period.  But in the generalized additive Poisson model, we can include a spline 
+term for duration, in this case Months since NVLW Start, that allows the failure rate to change over the vehicle's life.  
+We can similarly add splines for other features, and the prediction is formed by adding together the non-linear effects.
+
+To start with a simple model, we select only rows for 2020 Trucks and fit a GAM with splines for duration, ln(warranties),
+and exposure month of the failure.  Duration refers to the months from NVLW start (miles could also be used).  Ln(warranties) is 
+the natural log of the number of active warranties in that month of the observation window.  This variable accounts
+for the data's inherent right censoring when vehicles' warranties end.  Since there are a large number of warranties, 
+taking the natural log reduces the variation in the feature and hopefully avoids strange patterns in the spline's fit.
+
+In the plots below, I show the partial dependence plots for two GAMs on only 2020 Trucks.  Partial dependence plots essentially
+hold the other variables constant at their averages, and show how much the expected failures change when only the plotted 
+feature's value is adjusted. The first plot includes exposure month as a spline predictor variable, while the second plot 
+removes exposure month in the GAM due to its jagged shape and wide confidence band.  Removing exposure month barely
+changes the Mean Squared Log Error between the models, so removing the term benefits model simplicity without reducing
+predictive power. Since exposure month was not considered when failures were simulated, it makes sense that the fake data
+doesn't exhibit seasonal trends.  In other data, harsh winters or storm seasons can impact reliability, and it is important
+to consider seasonality.
+
+![partial dep 2020 truck with exp](https://github.com/emilysheen/reliabilityAnalysis/blob/master/plots/partial%20dependence%20GAM%202020%20Trucks%20n_splines%2020.jpg?raw=true)
+

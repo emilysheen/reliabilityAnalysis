@@ -182,3 +182,9 @@ to consider seasonality.
 
 ![partial dep 2020 truck with exp](https://github.com/emilysheen/reliabilityAnalysis/blob/master/plots/partial%20dependence%20GAM%202020%20Trucks%20n_splines%2020.jpg?raw=true)
 
+
+![partial dep 2020 truck no exp](https://github.com/emilysheen/reliabilityAnalysis/blob/master/plots/partial%20dependence%20GAM%202020%20Trucks%20no_exp_mo%20n_splines%2020.jpg?raw=true)
+
+Both these sets of partial dependence plots are selected to have 20 basis functions for each of the features' splines.  
+Adding more basis functions makes the spline more jagged, and overfits the data.  To demonstrate, the following plot
+shows the same GAM as above, but with 100 basis functions in each spline.

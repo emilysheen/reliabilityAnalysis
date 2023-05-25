@@ -286,7 +286,7 @@ testy = mdat2.loc[(mdat['train_test'] == 'Test') & (mdat['model_year'] == 2020) 
 # First GAM: 2020 Trucks only, Splines for duration and exposure month, linear term for ln_warranties
 # Before fitting the regression we suspect this example will not exhibit seasonality due to how the failure dates
 # were randomly generated.
-num_splines = 20
+num_splines = 100
 gam1 = PoissonGAM(l(0) + s(1, n_splines=num_splines), fit_intercept=True).fit(trainX, trainy)
 gam2 = PoissonGAM(s(0, n_splines=num_splines) + s(1, n_splines=num_splines), fit_intercept=True).fit(trainX, trainy)
 
@@ -294,9 +294,9 @@ gam2 = PoissonGAM(s(0, n_splines=num_splines) + s(1, n_splines=num_splines), fit
 # MSLE is used for poisson models, but below post has some other options to try
 # https://stats.stackexchange.com/questions/71720/error-metrics-for-cross-validating-poisson-models
 mean_squared_log_error(testy,gam1.predict(testX), squared=False)
-# 0.3524 2020 Sedans; 0.5277 2020 Trucks; 0.5265 2020 Trucks no exp month
+# 0.3524 2020 Sedans; 0.5277 2020 Trucks; 0.5265 2020 Trucks no exp month 20 splines; 0.5294 2020 Trucks no exp month 100 splines
 mean_squared_log_error(testy,gam2.predict(testX), squared=False)
-# 0.1461 2020 Sedans; 0.5255 2020 Trucks; 0.5250 2020 Trucks no exp month
+# 0.1461 2020 Sedans; 0.5255 2020 Trucks; 0.5250 2020 Trucks no exp month 20 splines; 0.6468 2020 Trucks no exp month 100 splines
 
 # PLOT ACTUALS VS FITTED...DOES NOT WORK
 true_value=testy

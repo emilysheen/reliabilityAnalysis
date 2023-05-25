@@ -15,8 +15,8 @@ import numpy as np
 
 # Load and transform data into desired monthly form
 # pd.set_option('display.max_columns', None)
-fails = pd.read_csv('failures_censors_data.csv').sort_values(by=['purchase_date', 'vin', 'days_purchase_to_censor_fail']).reset_index(drop=True)
-cars = pd.read_csv('cars_data.csv').sort_values(by=['purchase_date', 'vin']).reset_index(drop=True)
+fails = pd.read_csv('data/failures_censors_data.csv').sort_values(by=['purchase_date', 'vin', 'days_purchase_to_censor_fail']).reset_index(drop=True)
+cars = pd.read_csv('data/cars_data.csv').sort_values(by=['purchase_date', 'vin']).reset_index(drop=True)
 
 dat = cars.merge(fails, on=['vin', 'purchase_date', 'n_fails', 'nvlw_end_date'], how='left').sort_values(
     by=['purchase_date', 'vin', 'days_purchase_to_censor_fail']).reset_index(drop=True)  #46,135
@@ -52,7 +52,7 @@ dat[['train_test']].groupby('train_test').size()
 # Test     9267
 # Train    36868
 vin_test = dat[['vin', 'train_test']].drop_duplicates(keep = 'first')
-vin_test.to_csv("vin_train_test_table.csv", header=True, index=False)
+vin_test.to_csv("data/vin_train_test_table.csv", header=True, index=False)
 
 # To get the month-by-month format with # active warranties each month and # failures each month, need to agg data
 ###  For every interval start/end, the # warranties at risk is all warranties with a start date
@@ -91,14 +91,14 @@ for index, row in int_vin_dat.iterrows():
     int_vin_dat.at[index, 'active_warranty'] = check_active(row) # 12:38 to 12:40
 
 
-# int_vin_dat = pd.read_csv("vin_active_warranty.csv")  # 1680000
-# vin_test = pd.read_csv("vin_train_test_table.csv")
+# int_vin_dat = pd.read_csv("data/vin_active_warranty.csv")  # 1680000
+# vin_test = pd.read_csv("data/vin_train_test_table.csv")
 int_vin_dat = int_vin_dat.merge(vin_test, on='vin', how='left')
 
-# int_vin_dat.to_csv("vin_active_warranty.csv", header=True, index=False)   # before added train/test variable
-# int_vin_dat.to_csv("vin_active_warranty_train_test.csv", header=True, index=False)  # after adding train/test
+# int_vin_dat.to_csv("data/vin_active_warranty.csv", header=True, index=False)   # before added train/test variable
+# int_vin_dat.to_csv("data/vin_active_warranty_train_test.csv", header=True, index=False)  # after adding train/test
 
-# int_vin_dat = pd.read_csv("vin_active_warranty_train_test.csv")
+# int_vin_dat = pd.read_csv("data/vin_active_warranty_train_test.csv")
 
 # Summarize at the interval, model_year, car_type, and train_test level
 my_ct_active = int_vin_dat.groupby(['model_year', 'car_type', 'train_test', 'interval_start', 'interval_end']).agg(
@@ -155,7 +155,7 @@ cart_dict = dict({'Compact SUV': 1, 'Convertible': 2, 'Electric Vehicle':3, 'Hat
 mdat['car_type_code'] = mdat["car_type"].apply(lambda x: cart_dict.get(x))
 
 
-mdat.to_csv("monthly_failures_2023May24.csv", header=True, index=False)
+mdat.to_csv("data/monthly_failures_2023May24.csv", header=True, index=False)
 
 #########################################################################################
 ### Perform Poisson GAM Model with pygam
@@ -168,8 +168,8 @@ mdat.to_csv("monthly_failures_2023May24.csv", header=True, index=False)
     # te() tensor products
     # intercept
 
-# prior dataset is 'monthly_failures.csv'
-mdat = pd.read_csv('monthly_failures_2023May24.csv')
+# prior dataset is 'data/monthly_failures.csv'
+mdat = pd.read_csv('data/monthly_failures_2023May24.csv')
 mdat.columns # ['train_test', 'car_type', 'model_year', 'interval_start', 'interval_end', 'duration',
              #  'exposure_month', 'n_censored', 'n_failed', 'active_warranties', 'ln_warranties', 'car_type_code']
 

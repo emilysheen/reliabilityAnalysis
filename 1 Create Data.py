@@ -116,7 +116,7 @@ def add_days (row):
 cars['nvlw_mileout'] = cars.apply(lambda row: add_days(row), axis=1)
 cars['nvlw_end_date'] = cars[['nvlw_mileout','nvlw_timeout']].min(axis=1)
 
-cars.to_csv("cars_data.csv", header=True, index=False)
+cars.to_csv("data/cars_data.csv", header=True, index=False)
 
 ########################################################################################################################
 ######  2) REPAIR Failures DATA:  Let's assume we were approached about problematic engine block failures leading  #####
@@ -230,5 +230,5 @@ for index, row in fails_censors.sort_values(by=['purchase_date', 'vin', 'censor_
 
 fails_censors.head(100)
 
-fails_censors.to_csv("failures_censors_data.csv", header=True, index=False)
-fails.to_csv("failures_data.csv", header=True, index=False)
+fails_censors.to_csv("data/failures_censors_data.csv", header=True, index=False)
+fails.to_csv("data/failures_data.csv", header=True, index=False)

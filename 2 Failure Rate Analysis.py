@@ -14,8 +14,8 @@ import numpy as np
 from reliability.Nonparametric import KaplanMeier
 import matplotlib.pyplot as plt
 
-df = pd.read_csv('failures_censors_data.csv').sort_values(by=['purchase_date', 'vin', 'days_purchase_to_censor_fail']).reset_index(drop=True)
-cars = pd.read_csv('cars_data.csv').sort_values(by=['purchase_date', 'vin']).reset_index(drop=True)
+df = pd.read_csv('data/failures_censors_data.csv').sort_values(by=['purchase_date', 'vin', 'days_purchase_to_censor_fail']).reset_index(drop=True)
+cars = pd.read_csv('data/cars_data.csv').sort_values(by=['purchase_date', 'vin']).reset_index(drop=True)
 # pd.set_option('display.max_columns', None)
 first_fails = df[df.duplicated(['vin', 'censor_fail_status'])==False]
 len(first_fails.loc[first_fails['censor_fail_status'] == 'C'])
@@ -305,8 +305,8 @@ plt.savefig("plots/Parametric MCF for All Vehicles.jpg")
 #  Now we want to try to figure out WHY we have such high repair rates early in the vehicles' lives
 #  We have a few other synthesized variables we can look at by left joining in our car_data.csv file
 
-fails = pd.read_csv('failures_censors_data.csv').sort_values(by=['purchase_date', 'vin', 'days_purchase_to_censor_fail']).reset_index(drop=True)
-cars = pd.read_csv('cars_data.csv').sort_values(by=['purchase_date', 'vin']).reset_index(drop=True)
+fails = pd.read_csv('data/failures_censors_data.csv').sort_values(by=['purchase_date', 'vin', 'days_purchase_to_censor_fail']).reset_index(drop=True)
+cars = pd.read_csv('data/cars_data.csv').sort_values(by=['purchase_date', 'vin']).reset_index(drop=True)
 
 dat = cars.merge(fails, on=['vin', 'purchase_date', 'n_fails', 'nvlw_end_date'], how='left').sort_values(
     by=['purchase_date', 'vin', 'days_purchase_to_censor_fail']).reset_index(drop=True)

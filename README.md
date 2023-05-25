@@ -171,7 +171,7 @@ the natural log of the number of active warranties in that month of the observat
 for the data's inherent right censoring when vehicles' warranties end.  Since there are a large number of warranties, 
 taking the natural log reduces the variation in the feature and hopefully avoids strange patterns in the spline's fit.
 
-In the plots below, I show the partial dependence plots for two GAMs on only 2020 Trucks.  Partial dependence plots essentially
+In the plots below, I show the partial dependence plots for GAMs on only 2020 Trucks.  Partial dependence plots essentially
 hold the other variables constant at their averages, and show how much the expected failures change when only the plotted 
 feature's value is adjusted. The first plot includes exposure month as a spline predictor variable, while the second plot 
 removes exposure month in the GAM due to its jagged shape and wide confidence band.  Removing exposure month barely
@@ -180,11 +180,13 @@ predictive power. Since exposure month was not considered when failures were sim
 doesn't exhibit seasonal trends.  In other data, harsh winters or storm seasons can impact reliability, and it is important
 to consider seasonality.
 
-![partial dep 2020 truck with exp](https://github.com/emilysheen/reliabilityAnalysis/blob/master/plots/partial%20dependence%20GAM%202020%20Trucks%20n_splines%2020.jpg?raw=true)
+![partial dep 2020 truck with exp 20 splines](https://github.com/emilysheen/reliabilityAnalysis/blob/master/plots/partial%20dependence%20GAM%202020%20Trucks%20n_splines%2020.jpg?raw=true)
 
 
-![partial dep 2020 truck no exp](https://github.com/emilysheen/reliabilityAnalysis/blob/master/plots/partial%20dependence%20GAM%202020%20Trucks%20no_exp_mo%20n_splines%2020.jpg?raw=true)
+![partial dep 2020 truck no exp 20 splines](https://github.com/emilysheen/reliabilityAnalysis/blob/master/plots/partial%20dependence%20GAM%202020%20Trucks%20no_exp_mo%20n_splines%2020.jpg?raw=true)
 
-Both these sets of partial dependence plots are selected to have 20 basis functions for each of the features' splines.  
-Adding more basis functions makes the spline more jagged, and overfits the data.  To demonstrate, the following plot
+Both the partial dependence plots above are selected to have 20 basis functions for each of the features' splines.  
+Adding more basis functions makes the spline more jagged, and overfits the data.  To demonstrate, the plot below
 shows the same GAM as above, but with 100 basis functions in each spline.
+
+![partial dep 2020 truck no exp 100 splines](https://github.com/emilysheen/reliabilityAnalysis/blob/master/plots/partial%20dependence%20GAM%202020%20Trucks%20no_exp_mo%20n_splines%20100.jpg?raw=true)

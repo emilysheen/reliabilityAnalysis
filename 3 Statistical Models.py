@@ -286,9 +286,9 @@ testy = mdat2.loc[(mdat['train_test'] == 'Test') & (mdat['model_year'] == 2020) 
 # First GAM: 2020 Trucks only, Splines for duration and exposure month, linear term for ln_warranties
 # Before fitting the regression we suspect this example will not exhibit seasonality due to how the failure dates
 # were randomly generated.
-num_splines = 100
-gam1 = PoissonGAM(l(0) + s(1, n_splines=num_splines), fit_intercept=True).fit(trainX, trainy)
-gam2 = PoissonGAM(s(0, n_splines=num_splines) + s(1, n_splines=num_splines), fit_intercept=True).fit(trainX, trainy)
+num_splines = 20
+gam1 = PoissonGAM(l(0) + s(1, n_splines=num_splines), fit_intercept=False).fit(trainX, trainy)
+gam2 = PoissonGAM(s(0, n_splines=num_splines) + s(1, n_splines=num_splines), fit_intercept=False).fit(trainX, trainy)
 
 # Let's predict on our test set and compute error metrics
 # MSLE is used for poisson models, but below post has some other options to try
@@ -297,6 +297,9 @@ mean_squared_log_error(testy,gam1.predict(testX), squared=False)
 # 0.3524 2020 Sedans; 0.5277 2020 Trucks; 0.5265 2020 Trucks no exp month 20 splines; 0.5294 2020 Trucks no exp month 100 splines
 mean_squared_log_error(testy,gam2.predict(testX), squared=False)
 # 0.1461 2020 Sedans; 0.5255 2020 Trucks; 0.5250 2020 Trucks no exp month 20 splines; 0.6468 2020 Trucks no exp month 100 splines
+
+gam1.summary()
+gam2.summary()
 
 # PLOT ACTUALS VS FITTED...DOES NOT WORK
 true_value=testy
@@ -332,3 +335,59 @@ for i, ax in enumerate(axs):
     ax.set_title(titles[i]);
 plt.show()
 plt.savefig("plots/partial dependence GAM 2020 Trucks no_exp_mo n_splines "+str(num_splines)+".jpg")
+
+########################################################################################################################
+###  Let's try with active warranties without ln
+
+trainX = mdat2.loc[(mdat['train_test'] == 'Train') & (mdat['model_year'] == 2020) & (mdat['car_type'] == "Truck"),
+    ['active_warranties', 'duration']].reset_index(drop = True).to_numpy()       ## 'model_year', 'car_type_code',
+trainy = mdat2.loc[(mdat['train_test'] == 'Train') & (mdat['model_year'] == 2020) & (mdat['car_type'] == "Truck"),
+    'n_failed'].reset_index(drop = True).to_numpy()
+testX = mdat2.loc[(mdat['train_test'] == 'Test') & (mdat['model_year'] == 2020) & (mdat['car_type'] == "Truck"),
+    ['active_warranties', 'duration']].reset_index(drop = True).to_numpy()
+testy = mdat2.loc[(mdat['train_test'] == 'Test') & (mdat['model_year'] == 2020) & (mdat['car_type'] == "Truck"),
+    'n_failed'].reset_index(drop = True).to_numpy()
+
+num_splines = 20
+gam2 = PoissonGAM(s(0, n_splines=num_splines) + s(1, n_splines=num_splines), fit_intercept=False).fit(trainX, trainy)
+mean_squared_log_error(testy,gam2.predict(testX), squared=False) # 0.5152 for 2020 Trucks warranties 20 splines
+# 0.1461 2020 Sedans; 0.5255 2020 Trucks; 0.5250 2020 Trucks no exp month 20 splines; 0.6468 2020 Trucks no exp month 100 splines
+
+gam2.summary()
+
+# PLOT ACTUALS VS FITTED...DOES NOT WORK
+true_value=testy
+predicted_value = gam2.predict(testX)
+plt.figure(figsize=(10,10))
+plt.scatter(true_value, predicted_value, c='crimson')
+# plt.yscale('log')
+# plt.xscale('log')
+p1 = max(max(predicted_value), max(true_value))
+p2 = min(min(predicted_value), min(true_value))
+plt.plot([p1, p2], [p1, p2], 'b-')
+plt.xlabel('True Values', fontsize=15)
+plt.ylabel('Predictions', fontsize=15)
+plt.title("True vs. Predicted Values for 2020 Truck GAM\nFeatures are ln(# Active Warranties) and Duration", fontsize=17)
+plt.axis('equal')
+plt.show()
+plt.savefig("plots/gam2 pred vs actuals 2020 Truck lnwar dur.jpg")
+
+
+## plotting partial dependence
+plt.figure();
+plt.rcParams['figure.figsize'] = (28, 8)
+fig, axs = plt.subplots(1,2);
+plt.suptitle("Partial Dependence Plots for Feature Splines")
+titles = ['ln(# Active Warranties)', 'Duration (Months)', 'Exposure Month']
+for i, ax in enumerate(axs):
+    XX = gam2.generate_X_grid(term=i)
+    ax.plot(XX[:, i], gam2.partial_dependence(term=i, X=XX))
+    ax.plot(XX[:, i], gam2.partial_dependence(term=i, X=XX, width=.95)[1], c='r', ls='--')
+    # if i == 0:
+        # ax.set_ylim(2019, 2021)
+        # ax.set_ylim(-30,30)
+    ax.set_title(titles[i]);
+plt.show()
+plt.savefig("plots/partial dependence GAM 2020 Trucks no_exp_mo n_splines "+str(num_splines)+".jpg")
+
+

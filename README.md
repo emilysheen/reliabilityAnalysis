@@ -154,5 +154,9 @@ can use heavy drivers' patterns to extend the MCFs and give predictions for ligh
 ending their NVLWs.  While the 2021 model year vehicles' Years to Failure MCF curves end at 2.5 years, looking by mileage
 gives more complete predictions out to 36K miles (when heavier drivers mileage out of their warranties).
 
+
 ## 3 Statistical Models.py
 
+Generalized Additive Models (GAMs) are semi-parametric models that allow for some or all features to have a non-linear 
+relationship with the response variable, number of failures.  Splines, or non-linear effects on the response, are added
+together with linear and factor effects to generate predictions.

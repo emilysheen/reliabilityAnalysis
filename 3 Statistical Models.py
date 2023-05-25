@@ -98,11 +98,32 @@ int_vin_dat = int_vin_dat.merge(vin_test, on='vin', how='left')
 # int_vin_dat.to_csv("vin_active_warranty.csv", header=True, index=False)   # before added train/test variable
 # int_vin_dat.to_csv("vin_active_warranty_train_test.csv", header=True, index=False)  # after adding train/test
 
+# int_vin_dat = pd.read_csv("vin_active_warranty_train_test.csv")
+
 # Summarize at the interval, model_year, car_type, and train_test level
 my_ct_active = int_vin_dat.groupby(['model_year', 'car_type', 'train_test', 'interval_start', 'interval_end']).agg(
     active_warranties = pd.NamedAgg(column='active_warranty', aggfunc='sum')).reset_index()
     # vins = pd.NamedAgg(column='vin', aggfunc=pd.Series.nunique)
 
+# Want another aggregation with just train_test, interval_start, and interval_end and pct_truck/non-truck and pct2019-21
+my_ct_active['truck'] = None
+my_ct_active.loc[my_ct_active['car_type'].isin(['Truck', 'Heavy Duty Truck']), 'truck'] = 'Truck'
+my_ct_active.loc[(my_ct_active['car_type'].isin(['Truck', 'Heavy Duty Truck']) == False), 'truck'] = 'Non-Truck'
+my_ct_active[['truck']].groupby('truck').size()  #3360 total, 672 truck
+
+tt_active = my_ct_active.groupby(['train_test', 'interval_start', 'interval_end']).agg(
+    active_warranties = pd.NamedAgg(column='active_warranties', aggfunc='sum')).reset_index()
+
+truck_active = my_ct_active.groupby(['train_test', 'interval_start', 'interval_end', 'model_year','truck']).agg(
+    active_warranties = pd.NamedAgg(column='active_warranties', aggfunc='sum')).reset_index()
+
+piv_active = pd.pivot(truck_active, index = ['train_test', 'interval_start', 'interval_end'],
+                       columns=['model_year','truck'], values='active_warranties').\
+    reset_index(level=['train_test', 'interval_start', 'interval_end','war19nt', 'war19t', 'war20nt', 'war20t', 'war21nt', 'war21t'])
+
+my_ct_active.groupby(['train_test', 'interval_start', 'interval_end'])
+    ['truck'].value_counts(normalize=False)
+my_ct_active.groupby(['train_test', 'interval_start', 'interval_end'])['truck'].value_counts(normalize=True)
 
 def check_fails (dat):
     grouped = dat.groupby(['interval_start', 'interval_end', 'duration','exposure_month', 'car_type', 'model_year', 'train_test', 'censor_fail_status'])
@@ -152,42 +173,89 @@ mdat = pd.read_csv('monthly_failures_2023May24.csv')
 mdat.columns # ['train_test', 'car_type', 'model_year', 'interval_start', 'interval_end', 'duration',
              #  'exposure_month', 'n_censored', 'n_failed', 'active_warranties', 'ln_warranties', 'car_type_code']
 
+from pygam import LinearGAM, PoissonGAM, s, f, l, te
+import matplotlib.pyplot as plt
+from mpl_toolkits import mplot3d
+from pygam.datasets import wage, chicago, default, faithful
+from sklearn.metrics import confusion_matrix, accuracy_score, mean_squared_error, mean_squared_log_error
+# confusion_matrix and accuracy_score would work for classification but not poisson regression
 
-# let's remove car_type and see if the model runs
-trainX = mdat.loc[mdat['train_test'] == 'Train', ['model_year', 'car_type_code', 'ln_warranties', 'duration', 'exposure_month']].reset_index(drop = True).to_numpy()
-trainy = mdat.loc[mdat['train_test'] == 'Train', 'n_failed'].reset_index(drop = True).to_numpy()
-testX = mdat.loc[mdat['train_test'] == 'Test', ['model_year', 'car_type_code', 'ln_warranties', 'duration', 'exposure_month']].reset_index(drop = True).to_numpy()
-testy = mdat.loc[mdat['train_test'] == 'Test', 'n_failed'].reset_index(drop = True).to_numpy()
-
-
-from pygam import PoissonGAM, s, f, l, te
-from pygam.datasets import wage, chicago, default
 # X, y = chicago(return_X_y=True)  # sample dataset
 # X, y = wage(return_X_y=True)     # sample dataset
 # X, y = default(return_X_y=True)  # sample dataset
+# X, y = faithful(return_X_y=True)
 
+# To simplify the problem at the start, let's only model 2020 Trucks and see how we do before expanding to the full data
+trainX = mdat.loc[(mdat['train_test'] == 'Train') & (mdat['model_year'] == 2020) & (mdat['car_type'] == "Truck"),
+    ['ln_warranties', 'duration', 'exposure_month']].reset_index(drop = True).to_numpy()       ## 'model_year', 'car_type_code',
+trainy = mdat.loc[(mdat['train_test'] == 'Train') & (mdat['model_year'] == 2020) & (mdat['car_type'] == "Truck"),
+    'n_failed'].reset_index(drop = True).to_numpy()
+testX = mdat.loc[(mdat['train_test'] == 'Test') & (mdat['model_year'] == 2020) & (mdat['car_type'] == "Truck"),
+    ['ln_warranties', 'duration', 'exposure_month']].reset_index(drop = True).to_numpy()
+testy = mdat.loc[(mdat['train_test'] == 'Test') & (mdat['model_year'] == 2020) & (mdat['car_type'] == "Truck"),
+    'n_failed'].reset_index(drop = True).to_numpy()
 
-# First GAM: Splines for duration and exposure month, factors for model_year and car_type, linear for ln_warraties
+# First GAM: 2020 Trucks only, Splines for duration and exposure month, linear term for ln_warranties
 # Before fitting the regression we suspect this example will not exhibit seasonality due to how the failure dates
-# were randomly generated.   # f(0) + f(1) + l(2) + s(3) + s(4)
-gam1 = PoissonGAM(f(0) + f(1) + l(2) + s(3) + s(4), fit_intercept=True).fit(trainX, trainy)  # Remove f(1) for car_type
+# were randomly generated.
+num_splines = 20
+gam1 = PoissonGAM(l(0) + s(1, n_splines=num_splines) + s(2, n_splines=num_splines), fit_intercept=True).fit(trainX, trainy)
+gam2 = PoissonGAM(s(0, n_splines=num_splines) + s(1, n_splines=num_splines) + s(2, n_splines=num_splines), fit_intercept=True).fit(trainX, trainy)
 
-# Let's predict on our test set
-gam1_predy = gam1.predict(testX, testy)
+# Let's predict on our test set and compute error metrics
+# MSLE is used for poisson models, but below post has some other options to try
+# https://stats.stackexchange.com/questions/71720/error-metrics-for-cross-validating-poisson-models
+mean_squared_log_error(testy,gam1.predict(testX), squared=False)  # 0.3524 2020 Sedans; 0.5277 2020 Trucks
+mean_squared_log_error(testy,gam2.predict(testX), squared=False)  # 0.1461 2020 Sedans; 0.5255 2020 Trucks
 
-# Want predictor columns to be model_year, car_type
+# PLOT ACTUALS VS FITTED...DOES NOT WORK
+# true_value=testy
+# predicted_value = gam2.predict(testX)
+# plt.figure(figsize=(10,10))
+# plt.scatter(true_value, predicted_value, c='crimson')
+# # plt.yscale('log')
+# # plt.xscale('log')
+# p1 = max(max(predicted_value), max(true_value))
+# p2 = min(min(predicted_value), min(true_value))
+# plt.plot([p1, p2], [p1, p2], 'b-')
+# plt.xlabel('True Values', fontsize=15)
+# plt.ylabel('Predictions', fontsize=15)
+# plt.axis('equal')
+# plt.show()
+# plt.savefig("plots/gam2 pred vs actuals.jpg")
 
 
+# BELOW PLOT DOES NOT MAKE SENSE
+# gam = gam1.gridsearch(trainX, trainy)
+# gam = PoissonGAM().gridsearch(trainX, trainy)
+# plt.hist(testy, bins=200, color='k');
+# plt.plot(trainX, gam.predict(trainX), color='r')
+# plt.title('Best Lambda: {0:.2f}'.format(gam.lam[0][0]));
+# plt.ylim(0, 2)
 
-
-XX = generate_X_grid(gam)
+## plotting partial dependence
+plt.figure();
 plt.rcParams['figure.figsize'] = (28, 8)
-fig, axs = plt.subplots(1, len(data.feature_names[0:6]))
-titles = data.feature_names
+fig, axs = plt.subplots(1,3);
+plt.suptitle("Partial Dependence Plots for Feature Splines")
+titles = ['ln(# Active Warranties)', 'Duration (Months)', 'Exposure Month']
 for i, ax in enumerate(axs):
-    pdep, confi = gam.partial_dependence(XX, feature=i+1, width=.95)
-    ax.plot(XX[:, i], pdep)
-    ax.plot(XX[:, i], confi[0][:, 0], c='grey', ls='--')
-    ax.plot(XX[:, i], confi[0][:, 1], c='grey', ls='--')
-    ax.set_title(titles[i])
+    XX = gam2.generate_X_grid(term=i)
+    ax.plot(XX[:, i], gam2.partial_dependence(term=i, X=XX))
+    ax.plot(XX[:, i], gam2.partial_dependence(term=i, X=XX, width=.95)[1], c='r', ls='--')
+    # if i == 0:
+        # ax.set_ylim(2019, 2021)
+        # ax.set_ylim(-30,30)
+    ax.set_title(titles[i]);
 plt.show()
+plt.savefig("plots/partial dependence GAM 2020 Trucks n_splines "+str(num_splines)+".jpg")
+
+
+# 3D Plot, I think this only works for tensor product terms
+# plt.ion()
+# plt.rcParams['figure.figsize'] = (12, 8)
+# XX = gam2.generate_X_grid(term=1, meshgrid=True)
+# Z = gam2.partial_dependence(term=1, X=XX, meshgrid=True)
+# ax = plt.axes(projection='3d')
+# ax.plot_surface(XX[0], XX[1], Z, cmap='viridis')
+
